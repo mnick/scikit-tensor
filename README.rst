@@ -9,22 +9,22 @@ The required dependencies to build the software are Numpy >= 1.3, SciPy >= 0.7.
 
 Install
 -------
-This package uses distutils, which is the default way of installing python modules. To install in your home directory, use:
+This package uses distutils, which is the default way of installing python modules. To install in your home directory, use::
 
   python setup.py install --user
 
-To install for all users on Unix/Linux:
+To install for all users on Unix/Linux::
 
   python setup.py build
   sudo python setup.py install
 
-To install in development mode:
+To install in development mode::
 
   python setup.py develop
 
 Development
 -----------
 
-Development is synchronized via git. To clone this repository, run
+Development is synchronized via git. To clone this repository, run::
 
-  git clone git://github.com/scikit-learn/scikit-learn.git``
+  git clone git://github.com/scikit-learn/scikit-learn.git
