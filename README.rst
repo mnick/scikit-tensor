@@ -11,18 +11,16 @@ Install
 -------
 This package uses distutils, which is the default way of installing python modules. To install in your home directory, use:
 
-``python setup.py install --user``
+    python setup.py install --user
 
 To install for all users on Unix/Linux:
 
-```shell
-python setup.py build
-sudo python setup.py install
-```
+    python setup.py build
+    sudo python setup.py install
 
 Development
 -----------
 
 Development is synchronized via git. To clone this repository, run
 
-``git clone git://github.com/scikit-learn/scikit-learn.git``
+    git clone git://github.com/scikit-learn/scikit-learn.git``
