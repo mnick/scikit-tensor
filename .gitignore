@@ -1,0 +1,5 @@
+syntax: glob
+*.pyc
+build
+dist
+scikit_tensor.egg-info
