@@ -1,0 +1,26 @@
+scikit-tensor
+=============
+
+scikit-tensor is a Python module for multilinear algebra and tensor factorizations.
+
+Dependencies
+------------
+The required dependencies to build the software are Numpy >= 1.3, SciPy >= 0.7.
+
+Install
+-------
+This package uses distutils, which is the default way of installing python modules. To install in your home directory, use:
+
+`python setup.py install --user`
+
+To install for all users on Unix/Linux:
+
+`python setup.py build
+sudo python setup.py install`
+
+Development
+-----------
+
+Development is synchronized via git. To clone this repository, run
+
+`git clone git://github.com/scikit-learn/scikit-learn.git`
