@@ -335,6 +335,9 @@ class ktensor(object):
 
 
 def teneye(dim, order):
+    """
+    Create tensor with superdiagonal all one, rest zeros
+    """
     I = zeros(dim ** order)
     for f in range(dim):
         idd = f
@@ -358,44 +361,3 @@ def tvecmat(m, n):
     #print I1s
     #Tmn[I1s] = 1
     #return Tmn.reshape((d,d)).T
-
-
-# FIXME clean up following functions
-def s2i3D(i,j,k,N,K):
-    return k + j*K + i*N*K;
-
-
-def sub2ind(shape, cols, rows):
-    """ From the given shape, returns the index of the given subscript"""
-    cols = array(cols, dtype=np.int)
-    rows = array(rows, dtype=np.int)
-    return (cols * shape[1]) + rows
-
-
-def i2s(shape, ind):
-    m,n = shape
-    r = np.int_( ind % n )
-    c = np.int_( np.floor(ind / n) )
-    return c,r
-
-
-def ind2sub(shape, inds):
-    """ From the given shape, returns the subscrips of the given index"""
-    revshp = list(shape)
-    revshp.reverse()
-    mult = [1];
-    for i in range(len(revshp)-1):
-        mult.append( mult[i]*revshp[i] )
-    mult.reverse()
-    mult = array(mult)
-
-    sub = [];
-
-    for ind in inds:
-        subc = []
-        for i in range(len(shape)):
-            subc.append( np.floor(ind / mult[i]))
-            ind = ind - (np.floor(ind/mult[i]) * mult[i])
-        sub.append( tuple(np.int_( subc )) )
-    return sub
-
