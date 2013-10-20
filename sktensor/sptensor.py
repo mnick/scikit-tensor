@@ -17,15 +17,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from numpy import zeros, ones, array, arange, copy, ravel_multi_index
-from numpy import setdiff1d, hstack, hsplit, sort, prod
+from numpy import zeros, ones, array, arange, copy, ravel_multi_index, unravel_index
+from numpy import setdiff1d, hstack, hsplit, vsplit, sort, prod, lexsort
 from scipy.sparse import coo_matrix
 from scipy.sparse import issparse as issparse_mat
-from sktensor.utils import ravel_index, unravel_index, accum
-import sktensor.tensor as tt
+from sktensor.core import tensor_mixin
+from sktensor.utils import accum
+from sktensor.dtensor import unfolded_dtensor
 
 
-class sptensor(object):
+class sptensor(tensor_mixin):
     """
     Sparse tensor class. Stores data in COO format.
 
@@ -35,9 +36,9 @@ class sptensor(object):
 
     def __init__(self, subs, vals, shape=None, dtype=None, accumfun=None):
         if not isinstance(subs, tuple):
-            raise ValueError('subs must be a tuple of array-likes')
+            raise ValueError('Subscripts must be a tuple of array-likes')
         if len(subs[0]) != len(vals):
-            raise ValueError('subs and vals must be of equal length')
+            raise ValueError('Subscripts and values must be of equal length')
         if dtype is None:
             dtype = vals.dtype
         for i in range(len(subs)):
@@ -60,6 +61,49 @@ class sptensor(object):
             self.shape = array(shape, dtype=np.int)
         self.ndim = len(subs)
 
+    def __eq__(self, other):
+        self.sort()
+        other.sort()
+        return (self.vals == other.vals).all() and (array(self.subs) == array(other.subs)).all()
+    
+    def sort(self):
+        subs = array(self.subs)
+        sidx = lexsort(subs)
+        self.subs = tuple(z.flatten()[sidx] for z in vsplit(subs, len(self.shape)))
+        self.vals = self.vals[sidx]
+
+    def _ttm_compute(self, V, mode, transp):
+        Z = self.unfold(mode, transp=True).tocsr()
+        if transp:
+            V = V.T
+        Z = Z.dot(V.T)
+        shape = copy(self.shape)
+        shape[mode] = V.shape[0]
+        if issparse_mat(Z):
+            newT = fold((Z.row, Z.col), Z.data, [mode], shape)
+        else:
+            newT = unfolded_dtensor(Z.T, mode, shape).fold()
+        return newT
+    
+    def sttm_me_compute(self, V, edims, sdims, transp):
+        """
+        Assume Y = T x_i V_i for i = 1...n can fit into memory
+        """
+        shapeY = self.shape.copy()
+    
+        # Determine size of Y
+        for n in np.union1d(edims, sdims):
+            shapeY[n] = V[n].shape[1] if transp else V[n].shape[0]
+        print shapeY
+    
+        # Allocate Y (final result) and v (vectors for elementwise computations)
+        Y = zeros(shapeY)
+        shapeY = array(shapeY)
+        v = [None for _ in xrange(len(edims))]
+    
+        for i in xrange(np.prod(shapeY[edims])):
+            rsubs = unravel_index(shapeY[edims], i)
+
     def unfold(self, rdims, cdims=None, transp=False):
         if isinstance(rdims, type(1)):
             rdims = [rdims]
@@ -69,13 +113,56 @@ class sptensor(object):
         elif cdims is None:
             cdims = setdiff1d(range(self.ndim), rdims)[::-1]
         if not (arange(self.ndim) == sort(hstack((rdims, cdims)))).all():
-            raise ValueError('Incorrect specification of dimensions (rdims: %s, cdims: %s)' % (str(rdims), str(cdims)))
-        return unfold(self.subs, self.vals, rdims, cdims, self.shape)
+            raise ValueError(
+                'Incorrect specification of dimensions (rdims: %s, cdims: %s)'
+                % (str(rdims), str(cdims))
+            )
+        M = prod(self.shape[rdims])
+        N = prod(self.shape[cdims])
+        ridx = _build_idx(self.subs, self.vals, rdims, self.shape)
+        cidx = _build_idx(self.subs, self.vals, cdims, self.shape)
+        return unfolded_sptensor((self.vals, (ridx, cidx)), (M, N), rdims, cdims, self.shape)
+
+    def transpose(self, axes=None):
+        if axes is None:
+            raise NotImplementedError(
+                'Sparse tensor transposition without axes argument is not supported'
+            )
+        nsubs = tuple([self.subs[idx] for idx in axes])
+        nshape = [self.shape[idx] for idx in axes]
+        return sptensor(nsubs, self.vals, nshape)
+
 
     def toarray(self):
         A = zeros(self.shape)
         A.put(ravel_multi_index(self.subs, tuple(self.shape)), self.vals)
         return A
+
+
+class unfolded_sptensor(coo_matrix):
+
+    def __init__(self, tpl, shape, rdims, cdims, ten_shape, dtype=None, copy=False):
+        self.ten_shape = array(ten_shape)
+        if isinstance(rdims, int):
+            rdims = [rdims]
+        if cdims is None:
+            cdims = setdiff1d(range(len(self.ten_shape)), rdims)[::-1]
+        self.rdims = rdims
+        self.cdims = cdims
+        super(unfolded_sptensor, self).__init__(tpl, shape=shape, dtype=dtype, copy=copy)
+
+    def fold(self):
+        nsubs = zeros((len(self.data), len(self.ten_shape)), dtype=np.int)
+        if len(self.rdims) > 0:
+            nidx = unravel_index(self.row, self.ten_shape[self.rdims])
+            for i in xrange(len(self.rdims)):
+                nsubs[:, self.rdims[i]] = nidx[i]
+        if len(self.cdims) > 0:
+            nidx = unravel_index(self.col, self.ten_shape[self.cdims])
+            for i in xrange(len(self.cdims)):
+                nsubs[:, self.cdims[i]] = nidx[i]
+        nsubs = [z.flatten() for z in hsplit(nsubs, len(self.ten_shape))]
+        return sptensor(tuple(nsubs), self.data, self.ten_shape)
 
 
 def fromarray(A):
@@ -85,24 +172,26 @@ def fromarray(A):
     return sptensor(subs, vals, shape=A.shape, dtype=A.dtype)
 
 
-def transpose(T, axes=None):
-    if axes is None:
-        raise NotImplementedError("Sparse tensor transposition without axes argument is not supported")
-    nsubs = tuple([T.subs[idx] for idx in axes])
-    nshape = [T.shape[idx] for idx in axes]
-    return sptensor(nsubs, T.vals, nshape)
+def concatenate(tpl, axis=None):
+    """
+    Concatenate sparse tensors along axis
 
-
-def concatenate(tpl, axis):
-    if axis == None:
-        raise NotImplementedError("Sparse tensor concatenation without axis argument is not supported")
+    Parameter
+    ---------
+    tpl:  Tuple of sparse tensors
+    axis:  Axis for concatenation
+    """
+    if axis is None:
+        raise NotImplementedError(
+            'Sparse tensor concatenation without axis argument is not supported'
+        )
     T = tpl[0]
     for i in range(1, len(tpl)):
-        T = __single_concatenate(T, tpl[i], axis=axis)
+        T = _single_concatenate(T, tpl[i], axis=axis)
     return T
 
 
-def __single_concatenate(ten, other, axis):
+def _single_concatenate(ten, other, axis):
     tshape = ten.shape
     oshape = other.shape
     if len(tshape) != len(oshape):
@@ -114,88 +203,28 @@ def __single_concatenate(ten, other, axis):
     nsubs = [None for _ in xrange(len(tshape))]
     for i in oaxes:
         nsubs[i] = np.concatenate((ten.subs[i], other.subs[i]))
-    nsubs[axis] = np.concatenate((ten.subs[axis], other.subs[axis] + tshape[axis]))
+    nsubs[axis] = np.concatenate((
+        ten.subs[axis], other.subs[axis] + tshape[axis]
+    ))
     nvals = np.concatenate((ten.vals, other.vals))
     nshape = np.copy(tshape)
     nshape[axis] = tshape[axis] + oshape[axis]
     return sptensor(nsubs, nvals, nshape)
 
 
-def unfold(subs, vals, rdims, cdims, tshape):
-    #subs = copy(subs)
-    #vals = copy(vals)
-    #tshape = copy(tshape)
-    M = prod(tshape[rdims])
-    N = prod(tshape[cdims])
-    ridx = __build_idx(subs, vals, rdims, tshape)
-    cidx = __build_idx(subs, vals, cdims, tshape)
-    return coo_matrix((vals, (ridx, cidx)), shape=(M, N))
-
-
-def fold(subs, vals, rdims, tshape, cdims=None):
-    if type(rdims) == type(1):
-        rdims = [rdims]
-    nsubs = zeros((len(vals), len(tshape)), dtype=np.int)
-    tshape = array(tshape)
-    if cdims is None:
-        cdims = setdiff1d(range(len(tshape)), rdims)[::-1]
-    if len(rdims) > 0:
-        nsubs[:, rdims] = unravel_index(tshape[rdims], subs[0])
-    if len(cdims) > 0:
-        nsubs[:, cdims] = unravel_index(tshape[cdims], subs[1])
-    nsubs = [z.flatten() for z in hsplit(nsubs, len(tshape))]
-    return sptensor(nsubs, vals, tshape)
-
-
 def issparse(obj):
     return isinstance(obj, sptensor)
 
 
-def __sttm_compute(T, V, mode, transp):
-    Z = T.unfold(mode, transp=True).tocsr()
-    if transp:
-        V = V.T
-    Z = Z.dot(V.T)
-    shape = copy(T.shape)
-    shape[mode] = V.shape[0]
-    if issparse_mat(Z):
-        newT = fold((Z.row, Z.col), Z.data, [mode], shape)
-    else:
-        newT = tt.fold(Z.T, mode, shape)
-    return newT
-
-
-def sttm_me_compute(T, V, edims, sdims, transp):
-    """
-    Assume Y = T x_i V_i for i = 1...n can fit into memory
-    """
-    shapeY = T.shape.copy()
-
-    # Determine size of Y
-    for n in np.union1d(edims, sdims):
-        shapeY[n] = V[n].shape[1] if transp else V[n].shape[0]
-    print shapeY
-
-    # Allocate Y (final result) and v (vectors for elementwise computations)
-    Y = zeros(shapeY)
-    shapeY = array(shapeY)
-    v = [None for _ in xrange(len(edims))]
-
-    for i in xrange(np.prod(shapeY[edims])):
-        print i
-        rsubs = unravel_index(shapeY[edims], i)
-        print rsubs
-
-
-def __build_idx(subs, vals, dims, tshape):
+def _build_idx(subs, vals, dims, tshape):
     shape = array(tshape[dims], ndmin=1)
     dims = array(dims, ndmin=1)
     if len(shape) == 0:
         idx = ones(len(vals), dtype=vals.dtype)
     elif len(subs) == 0:
-        idx = array([])
+        idx = array(tuple())
     else:
-        idx = ravel_index([subs[i] for i in dims], shape)
+        idx = ravel_multi_index(tuple(subs[i] for i in dims), shape)
     return idx
 
 
@@ -227,4 +256,3 @@ def ttv(T, v, dims, vidx, remdims):
 
     # result is an array
     return sptensor(nsubs, nvals, shape=nsz, accumfun=np.sum)
-

@@ -17,97 +17,95 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from numpy import array, dot, outer, zeros, ones, arange, kron
-from numpy import setdiff1d, prod
+from numpy import setdiff1d
 from scipy.linalg import eigh
 from scipy.sparse import issparse as issparse_mat
 from scipy.sparse.linalg import eigsh
 from operator import isSequenceType
-import sktensor.tensor as tt
-import sktensor.sptensor as stt
-from sktensor.sptensor import issparse
+from abc import ABCMeta, abstractmethod
 #from coremod import khatrirao
 
 
-def ttm(T, V, mode=None, transp=False, without=False):
-    """
-    Tensor times matrix product
+class tensor_mixin(object):
 
-    Parameter
-    ---------
-    T:
+    __metaclass__ = ABCMeta
 
-    >>> T = zeros((3, 4, 2))
-    >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
-    >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
-    >>> V = array([[1, 3, 5], [2, 4, 6]])
+    def ttm(self, V, mode=None, transp=False, without=False):
+        """
+        Tensor times matrix product
 
-    >>> Y = ttm(T, V, 0)
-    >>> Y[:, :, 0]
-    array([[  22.,   49.,   76.,  103.],
-           [  28.,   64.,  100.,  136.]])
+        Parameter
+        ---------
+        T:
 
-    >>> Y[:, :, 1]
-    array([[ 130.,  157.,  184.,  211.],
-           [ 172.,  208.,  244.,  280.]])
+        >>> T = zeros((3, 4, 2))
+        >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
+        >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
+        >>> V = array([[1, 3, 5], [2, 4, 6]])
 
-    """
-    if mode is None:
-        mode = range(T.ndim)
-    if isinstance(V, np.ndarray):
-        Y = __ttm_single(T, V, mode, transp)
-    elif isSequenceType(V):
-        Y = __ttm_seq(T, V, mode, transp, without)
-    return Y
+        >>> Y = ttm(T, V, 0)
+        >>> Y[:, :, 0]
+        array([[  22.,   49.,   76.,  103.],
+            [  28.,   64.,  100.,  136.]])
+
+        >>> Y[:, :, 1]
+        array([[ 130.,  157.,  184.,  211.],
+            [ 172.,  208.,  244.,  280.]])
+
+        """
+        if mode is None:
+            mode = range(self.ndim)
+        if isinstance(V, np.ndarray):
+            Y = self._ttm_compute(V, mode, transp)
+        elif isSequenceType(V):
+            dims, vidx = check_multiplication_dims(mode, self.ndim, len(V), vidx=True, without=without)
+            Y = self._ttm_compute(V[vidx[0]], dims[0], transp)
+            for i in xrange(1, len(dims)):
+                Y = self.ttm_compute(Y, V[vidx[i]], dims[i], transp)
+        return Y
+
+        def ttv(self, v, dims=[]):
+            """
+            Tensor times vector product
+        
+            Parameter
+            ---------
+            """
+            if not isinstance(v, tuple):
+                v = (v, )
+            dims, vidx = check_multiplication_dims(dims, self.ndim, len(v), vidx=True)
+            for i in range(len(dims)):
+                if not len(v[vidx[i]]) == self.shape[dims[i]]:
+                    raise ValueError('Multiplicant is wrong size')
+            remdims = np.setdiff1d(range(self.ndim), dims)
+            return self._ttv_compute(v, dims, vidx, remdims)
+
+        @abstractmethod
+        def _ttm_compute(self, V, mode, transp):
+            pass
 
 
-def __ttm_single(T, V, mode, transp):
+def __ttm_single(self, V, mode, transp):
     """
     Helper function, dispatches ttm to sparse or dense tensor impementation
     """
     if issparse(T):
         return stt.__sttm_compute(T, V, mode, transp)
-    else:
-        return tt.__ttm_compute(T, V, mode, transp)
+    elif isinstance(T, tensor):
+        return T.ttm(V, mode, transp)
+    elif isinstance(T, np.ndarray):
+        return tensor(T).ttm(V, mode, transp)
 
 
-def __ttm_seq(T, V, mode, transp, without):
-    dims, vidx = dimscheck(mode, T.ndim, len(V), vidx=True, without=without)
-    Y = __ttm_single(T, V[vidx[0]], dims[0], transp)
-    for i in xrange(1, len(dims)):
-        Y = __ttm_single(Y, V[vidx[i]], dims[i], transp)
-    return Y
 
 
-def ttv(T, v, dims=[]):
-    """
-    Tensor times vector product
-
-    Parameter
-    ---------
-    """
-    ndim = T.ndim
-    if not isinstance(v, tuple):
-        v = (v, )
-    dims, vidx = dimscheck(dims, ndim, len(v), vidx=True)
-    for i in range(len(dims)):
-        if not len(v[vidx[i]]) == T.shape[dims[i]]:
-            raise ValueError('Multiplicant is wrong size')
-    remdims = np.setdiff1d(range(ndim), dims)
-    if issparse(T):
-        T = stt.ttv(T, v, dims, vidx, remdims)
-    else:
-        T = tt.ttv(T, v, dims, vidx, remdims)
-    return T
-
-
-def dimscheck(dims, N, M, vidx=False, without=False):
+def check_multiplication_dims(dims, N, M, vidx=False, without=False):
     dims = array(dims, ndmin=1)
     if len(dims) == 0:
         dims = arange(N)
     if without:
         dims = setdiff1d(range(N), dims)
-    toN = arange(N)
-    if not np.in1d(dims, toN).all():
+    if not np.in1d(dims, arange(N)).all():
         raise ValueError('Invalid dimensions')
     P = len(dims)
     sidx = np.argsort(dims)
@@ -153,15 +151,19 @@ def unfold(X, n):
     """
     if issparse(X):
         return X.unfold([n]).tocsr()
+    elif isinstance(X, tt.tensor):
+        return X.unfold(n)
+    elif isinstance(X, np.ndarray):
+        return unfold(tt.tensor(X), n)
     else:
-        return tt.unfold(X, n)
+        raise ValueError('Unsupported object (%s)' % type(X))
 
 
 def fold(X, n, shape):
     if issparse(X):
         return X.fold(n, shape)
-    else:
-        return tt.fold(X, n, shape)
+    elif isinstance(X, np.ndarray):
+        return unfolded_tensor(X, n, shape).fold()
 
 
 def transpose(X, axes=None):
@@ -185,11 +187,11 @@ def innerprod(X, Y):
     return dot(X.flatten(), Y.flatten())
 
 
-def mttkrp(X, U, n):
+def uttkrp(X, U, n):
+    "Unfolded tensor x Khatri-Rao product"
     order = range(n) + range(n + 1, X.ndim)
-    Xn = unfold(X, n)
     Z = khatrirao([U[i] for i in order], reverse=True)
-    return Xn.dot(Z)
+    return X.unfold(n).dot(Z)
 
 
 def nvecs(X, n, rank, do_flipsign=True):
@@ -328,9 +330,7 @@ class ktensor(object):
         return res
 
     def toarray(self):
-        print self.lmbda.shape, khatrirao(self.U, reverse=True).shape
         A = dot(self.lmbda, khatrirao(self.U, reverse=True).T)
-        print prod(A.shape), prod(self.shape)
         return A.reshape(self.shape)
 
 

@@ -29,14 +29,14 @@ def accum(subs, vals, func=np.sum, sorted=False, sz=None, with_subs=False):
         return nvals
 
 
-def ravel_index(subs, shape):
-    subs = array(subs).T
-    mult = [1] + list(cumprod(array(shape)[:-1]))
-    return dot(subs, array(mult).T)
+#def ravel_index(subs, shape):
+#    subs = array(subs).T
+#    mult = [1] + list(cumprod(array(shape)[:-1]))
+#    return dot(subs, array(mult).T)
 
 
-def unravel_index(shape, idx):
-    if isNumberType(idx):
+def unravel_dimension(shape, idx):
+    if isinstance(idx, type(1)):
         idx = array([idx])
     k = [1] + list(cumprod(shape[:-1]))
     n = len(shape)

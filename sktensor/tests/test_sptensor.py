@@ -1,12 +1,13 @@
 import numpy as np
-from numpy import vstack, ones, zeros, array, setdiff1d, allclose
+from numpy import ones, zeros, array, setdiff1d, allclose
 from numpy.random import randint
-from sktensor.core import unfold, ttm
-from sktensor.sptensor import sptensor, fold, sttm_me_compute
+from sktensor.dtensor import dtensor
+from sktensor.sptensor import sptensor
 from nose.tools import assert_equal, assert_true, raises
 from fixtures import ttm_fixture
 
 ttm_fixture(__name__)
+
 
 def mysetup():
     shape = (25, 11, 18, 7, 2)
@@ -14,12 +15,14 @@ def mysetup():
     subs = [None for _ in xrange(len(shape))]
     for i in range(len(shape)):
         subs[i] = randint(0, shape[i], sz)
-    #subs = vstack(subs).T
     vals = ones(sz)
-    return subs, vals, shape
+    return tuple(subs), vals, shape
 
 
 def test_init():
+    """
+    Creation of new sptensor objects
+    """
     subs, vals, shape = mysetup()
     T = sptensor(subs, vals, shape)
     assert_equal(len(shape), T.ndim)
@@ -44,13 +47,13 @@ def test_nonEqualLength():
 
 def test_unfold():
     subs, vals, shape = mysetup()
-    Td = zeros(shape, dtype=np.float32)
+    Td = dtensor(zeros(shape, dtype=np.float32))
     Td[subs] = 1
 
     for i in range(len(shape)):
         rdims = [i]
         cdims = setdiff1d(range(len(shape)), rdims)[::-1]
-        Md = unfold(Td, i)
+        Md = Td.unfold(i)
 
         T = sptensor(subs, vals, shape)
 
@@ -72,25 +75,24 @@ def test_fold():
     subs, vals, shape = mysetup()
     T = sptensor(subs, vals, shape)
     for i in range(len(shape)):
-        Ms = T.unfold([i])
-        T = fold((Ms.row, Ms.col), Ms.data, [i], shape)
+        X = T.unfold([i]).fold()
         assert_equal(shape, tuple(T.shape))
         assert_equal(len(shape), len(T.subs))
         assert_equal(len(subs), len(T.subs))
+        assert_equal(X, T)
         for j in xrange(len(subs)):
+            subs[j].sort()
+            T.subs[j].sort()
             assert_true((subs[j] == T.subs[j]).all())
 
 
 def test_ttm():
-    T = globals()['T']
-    T = sptensor(T.nonzero(), T.flatten(), T.shape)
-    Y2 = ttm(T, U, 0)
+    S = sptensor(T.nonzero(), T.flatten(), T.shape)
+    Y2 = S.ttm(U, 0)
     assert_equal((2, 4, 2), Y2.shape)
     assert_true((Y == Y2).all())
 
 
 def test_sttm_me():
-    T = globals()['T']
-    print T.shape
-    T = sptensor(T.nonzero(), T.flatten(), T.shape)
-    sttm_me_compute(T, U, [1], [0], False)
+    S = sptensor(T.nonzero(), T.flatten(), T.shape)
+    sttm_me_compute(S, U, [1], [0], False)

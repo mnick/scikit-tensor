@@ -1,21 +1,22 @@
-from numpy import array, zeros
+from numpy import array
 from numpy.random import randn
-from sktensor.core import *
-from sktensor import sptensor, ktensor
+from sktensor.dtensor import dtensor
 
-from nose import with_setup
-from nose.tools import assert_true
 from nose.tools import assert_equal
+from nose.tools import assert_true
 from fixtures import ttm_fixture
 
 ttm_fixture(__name__)
 
-def test_check_multiplication_dims():
-    ndims = 3
-    M = 2
-    assert_true(([1, 2] == check_multiplication_dims(0, ndims, M, without=True)).all())
-    assert_true(([0, 2] == check_multiplication_dims(1, ndims, M, without=True)).all())
-    assert_true(([0, 1] == check_multiplication_dims(2, ndims, M, without=True)).all())
+
+def test_new():
+    sz = (10, 23, 5)
+    A = randn(*sz)
+    T = dtensor(A)
+    assert_equal(A.ndim, T.ndim)
+    assert_equal(A.shape, T.shape)
+    assert_true((A == T).all())
+    assert_true((T == A).all())
 
 
 def test_dense_fold():
@@ -55,15 +56,3 @@ def test_dtensor_ttm():
     Y2 = X.ttm(U, 0)
     assert_equal((2, 4, 2), Y2.shape)
     assert_true((Y == Y2).all())
-
-
-def test_spttv():
-    subs = (
-        array([0, 1, 0, 5, 7, 8]),
-        array([2, 0, 4, 5, 3, 9]),
-        array([0, 1, 2, 2, 1, 0])
-    )
-    vals = array([1, 1, 1, 1, 1, 1])
-    S = sptensor(subs, vals, shape=[10, 10, 3])
-    K = ktensor([randn(10, 2), randn(10, 2), randn(3, 2)])
-    K.innerprod(S)
