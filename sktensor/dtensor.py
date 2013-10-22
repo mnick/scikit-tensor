@@ -49,7 +49,8 @@ class dtensor(tensor_mixin, np.ndarray):
         newsz = [p] + list(sz[:mode]) + list(sz[mode + 1:])
         newT = newT.reshape(newsz)
         # transpose + argsort(order) equals ipermute
-        return np.transpose(newT, argsort(order))
+        newT = np.transpose(newT, argsort(order))
+        return dtensor(newT)
 
     def __ttv_compute(T, v, dims, vidx, remdims):
         """
@@ -74,6 +75,41 @@ class dtensor(tensor_mixin, np.ndarray):
         return T
 
     def unfold(self, mode):
+        """
+        Unfolds a dense tensor in mode n.
+
+        Parameters
+        ----------
+        mode: int
+            Mode in which tensor is unfolded
+
+        Returns
+        -------
+        unfolded_dtensor: unfolded_dtensor object
+
+        >>> T = zeros((3, 4, 2))
+        >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
+        >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
+        >>> T = dtensor(T)
+
+        >>> T.unfold(0)
+        array([[  1.,   4.,   7.,  10.,  13.,  16.,  19.,  22.],
+               [  2.,   5.,   8.,  11.,  14.,  17.,  20.,  23.],
+               [  3.,   6.,   9.,  12.,  15.,  18.,  21.,  24.]])
+
+        >>> T.unfold(1)
+        array([[  1.,   2.,   3.,  13.,  14.,  15.],
+               [  4.,   5.,   6.,  16.,  17.,  18.],
+               [  7.,   8.,   9.,  19.,  20.,  21.],
+               [ 10.,  11.,  12.,  22.,  23.,  24.]])
+
+        >>> T.unfold(2)
+        array([[  1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,  11.,
+                 12.],
+               [ 13.,  14.,  15.,  16.,  17.,  18.,  19.,  20.,  21.,  22.,  23.,
+                 24.]])
+        """
+
         sz = array(self.shape)
         N = len(sz)
         #order = ([n], range(n) + range(n + 1, N))
@@ -81,6 +117,16 @@ class dtensor(tensor_mixin, np.ndarray):
         newsz = (sz[order[0]], prod(sz[order[1]]))
         arr = np.transpose(self, axes=order[0] + order[1]).reshape(newsz)
         return unfolded_dtensor(arr, mode, self.shape)
+
+    def norm(self):
+        """
+        Frobenius norm for tensors
+
+        See
+        ---
+        [Kolda and Bader, 2009; p.457]
+        """
+        return np.linalg.norm(self)
 
 
 class unfolded_dtensor(np.ndarray):
