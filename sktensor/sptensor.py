@@ -65,7 +65,7 @@ class sptensor(tensor_mixin):
         self.sort()
         other.sort()
         return (self.vals == other.vals).all() and (array(self.subs) == array(other.subs)).all()
-    
+
     def sort(self):
         subs = array(self.subs)
         sidx = lexsort(subs)
@@ -83,24 +83,25 @@ class sptensor(tensor_mixin):
             newT = fold((Z.row, Z.col), Z.data, [mode], shape)
         else:
             newT = unfolded_dtensor(Z.T, mode, shape).fold()
+
         return newT
-    
+
     def sttm_me_compute(self, V, edims, sdims, transp):
         """
         Assume Y = T x_i V_i for i = 1...n can fit into memory
         """
         shapeY = self.shape.copy()
-    
+
         # Determine size of Y
         for n in np.union1d(edims, sdims):
             shapeY[n] = V[n].shape[1] if transp else V[n].shape[0]
         print shapeY
-    
+
         # Allocate Y (final result) and v (vectors for elementwise computations)
         Y = zeros(shapeY)
         shapeY = array(shapeY)
         v = [None for _ in xrange(len(edims))]
-    
+
         for i in xrange(np.prod(shapeY[edims])):
             rsubs = unravel_index(shapeY[edims], i)
 
@@ -131,6 +132,17 @@ class sptensor(tensor_mixin):
         nsubs = tuple([self.subs[idx] for idx in axes])
         nshape = [self.shape[idx] for idx in axes]
         return sptensor(nsubs, self.vals, nshape)
+
+
+    def norm(self):
+        """
+        Frobenius norm for tensors
+
+        See
+        ---
+        [Kolda and Bader, 2009; p.457]
+        """
+        return np.linalg.norm(self.vals)
 
 
     def toarray(self):
