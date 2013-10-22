@@ -1,7 +1,7 @@
 from numpy import array, zeros
 from numpy.random import randn
 from sktensor.core import *
-from sktensor import sptensor, ktensor
+from sktensor import dtensor, sptensor, ktensor
 
 from nose import with_setup
 from nose.tools import assert_true
@@ -17,6 +17,33 @@ def test_check_multiplication_dims():
     assert_true(([0, 2] == check_multiplication_dims(1, ndims, M, without=True)).all())
     assert_true(([0, 1] == check_multiplication_dims(2, ndims, M, without=True)).all())
 
+
+def test_khatrirao():
+    A = array([
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+    ])
+    B = array([
+        [1, 4, 7],
+        [2, 5, 8],
+        [3, 6, 9]
+    ])
+    C = array([
+        [1, 8, 21],
+        [2, 10, 24],
+        [3, 12, 27],
+        [4, 20, 42],
+        [8, 25, 48],
+        [12, 30, 54],
+        [7, 32, 63],
+        [14, 40, 72],
+        [21, 48, 81]
+    ])
+
+    D = khatrirao((A, B))
+    assert_equal(C.shape, D.shape)
+    assert_true((C == D).all())
 
 def test_dense_fold():
     X = dtensor(T)
