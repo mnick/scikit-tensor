@@ -97,46 +97,38 @@ class tensor_mixin(object):
     def _ttv_compute(self, v, dims, vidx, remdims):
         pass
 
+    @abstractmethod
+    def uttkrp(self, U, n):
+        """
+        Unfolded tensor times Khatri-Rao product for tensors
+
+        Parameters
+        ----------
+        X: tensor_mixin
+        U: list of array-like
+        n: int
+
+        See also
+        --------
+        For efficient computations of unfolded tensor times Khatri-Rao products
+        for specialiized tensors see also
+        - dtensor.uttkrp
+        - sptensor.uttkrp
+        - ktensor.uttkrp
+        - ttensor.uttkrp
+
+        References
+        ----------
+        [1] B.W. Bader, T.G. Kolda
+            Efficient Matlab Computations With Sparse and Factored Tensors
+            SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
+        """
+        pass
+
 
 def istensor(X):
     return isinstance(X, tensor_mixin)
 
-def __ttm_single(self, V, mode, transp):
-    """
-    Helper function, dispatches ttm to sparse or dense tensor impementation
-    """
-    if issparse(T):
-        return stt.__sttm_compute(T, V, mode, transp)
-    elif isinstance(T, tensor):
-        return T.ttm(V, mode, transp)
-    elif isinstance(T, np.ndarray):
-        return tensor(T).ttm(V, mode, transp)
-
-
-
-def check_multiplication_dims(dims, N, M, vidx=False, without=False):
-    dims = array(dims, ndmin=1)
-    if len(dims) == 0:
-        dims = arange(N)
-    if without:
-        dims = setdiff1d(range(N), dims)
-    if not np.in1d(dims, arange(N)).all():
-        raise ValueError('Invalid dimensions')
-    P = len(dims)
-    sidx = np.argsort(dims)
-    sdims = dims[sidx]
-    if vidx:
-        if M > N:
-            raise ValueError('More multiplicants than dimensions')
-        if M != N and M != P:
-            raise ValueError('Invalid number of multiplicants')
-        if P == M:
-            vidx = sidx
-        else:
-            vidx = sdims
-        return sdims, vidx
-    else:
-        return sdims
 
 # dynamically create module level functions
 conv_funcs = [
@@ -168,6 +160,31 @@ for fname in conv_funcs:
 
     )
     setattr(sys.modules[__name__], fname, nfunc)
+
+
+def check_multiplication_dims(dims, N, M, vidx=False, without=False):
+    dims = array(dims, ndmin=1)
+    if len(dims) == 0:
+        dims = arange(N)
+    if without:
+        dims = setdiff1d(range(N), dims)
+    if not np.in1d(dims, arange(N)).all():
+        raise ValueError('Invalid dimensions')
+    P = len(dims)
+    sidx = np.argsort(dims)
+    sdims = dims[sidx]
+    if vidx:
+        if M > N:
+            raise ValueError('More multiplicants than dimensions')
+        if M != N and M != P:
+            raise ValueError('Invalid number of multiplicants')
+        if P == M:
+            vidx = sidx
+        else:
+            vidx = sdims
+        return sdims, vidx
+    else:
+        return sdims
 
 def unfold(X, n):
     if istensor(X):
@@ -210,13 +227,6 @@ def innerprod(X, Y):
     inner prodcut with a Tensor
     """
     return dot(X.flatten(), Y.flatten())
-
-
-def uttkrp(X, U, n):
-    "Unfolded tensor x Khatri-Rao product"
-    order = range(n) + range(n + 1, X.ndim)
-    Z = khatrirao([U[i] for i in order], reverse=True)
-    return X.unfold(n).dot(Z)
 
 
 def nvecs(X, n, rank, do_flipsign=True):
@@ -277,13 +287,38 @@ def scale(X, n):
 # TODO more efficient cython implementation
 def khatrirao(A, reverse=False):
     """
-    Khatri-Rao product
+    Compute the columnwise Khatri-Rao product
+
+    Parameters
+    ----------
+    A: tuple of ndarrays
+      Matrices for which the columnwise Khatri-Rao product should be computed
+
+    reverse: boolean
+      Compute Khatri-Rao product in reverse order
+
+    >>> import numpy as np
+    >>> A = np.random.randn(5, 2)
+    >>> B = np.random.randn(4, 2)
+    >>> C = khatrirao((A, B))
+
+    >>> C.shape
+    (20, 2)
+
+    >>> (C[:, 0] == np.kron(A[:, 0], B[:, 0])).all()
+    true
+
+    >>> (C[:, 1] == np.kron(A[:, 1], B[:, 1])).all()
+    true
     """
+
+    if not isinstance(A, tuple):
+        raise ValueError('A must be a tuple of array likes')
     N = A[0].shape[1]
     M = 1
     for i in range(len(A)):
         if A[i].ndim != 2:
-            raise ValueError('A must be a list of matrices')
+            raise ValueError('A must be a tuple of matrices (A[%d].ndim = %d)' % (i, A[i].ndim))
         elif N != A[i].shape[1]:
             raise ValueError('All matrices must have same number of columns')
         M *= A[i].shape[0]
@@ -292,58 +327,12 @@ def khatrirao(A, reverse=False):
         matorder = matorder[::-1]
     # preallocate
     P = np.zeros((M, N), dtype=A[0].dtype)
-    for n in range(N):
+    for n in xrange(N):
         ab = A[matorder[0]][:, n]
-        for j in range(1, len(matorder)):
-            ab = np.kron(A[matorder[j]][:, n], ab)
+        for j in xrange(1, len(matorder)):
+            ab = np.kron(ab, A[matorder[j]][:, n])
         P[:, n] = ab
     return P
-
-
-class ktensor(object):
-
-    def __init__(self, U, lmbda=None):
-        self.U = U
-        self.shape = [Ui.shape[0] for Ui in U]
-        self.rank = U[0].shape[1]
-        self.lmbda = lmbda
-        if not all(array([Ui.shape[1] for Ui in U]) == self.rank):
-            raise ValueError('Dimension mismatch of factor matrices')
-        if lmbda is None:
-            self.lmbda = ones(self.rank)
-
-    def mttkrp(self, U, n):
-        N = len(self.shape)
-        if n == 1:
-            R = U[1].shape[1]
-        else:
-            R = U[0].shape[1]
-        W = np.tile(self.lmbda, 1, R)
-        for i in range(n) + range(n + 1, N):
-            W = W * dot(self.U[i].T, U[i])
-        return dot(self.U[n], W)
-
-    def norm(self):
-        N = len(self.shape)
-        coef = outer(self.lmbda, self.lmbda)
-        for i in range(N):
-            coef = coef * dot(self.U[i].T, self.U[i])
-        return np.sqrt(coef.sum())
-
-    def innerprod(self, X):
-        N = len(self.shape)
-        R = len(self.lmbda)
-        res = 0
-        for r in range(R):
-            vecs = []
-            for n in range(N):
-                vecs.append(self.U[n][:, r])
-            res += self.lmbda[r] * ttv(X, tuple(vecs))
-        return res
-
-    def toarray(self):
-        A = dot(self.lmbda, khatrirao(self.U, reverse=True).T)
-        return A.reshape(self.shape)
 
 
 def teneye(dim, order):
