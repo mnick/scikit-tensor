@@ -25,6 +25,15 @@ from operator import isSequenceType
 from abc import ABCMeta, abstractmethod
 #from coremod import khatrirao
 
+import sys
+import types
+
+module_funs = []
+
+
+def modulefunction(func):
+    module_funs.append(func.func_name)
+
 
 class tensor_mixin(object):
 
@@ -61,13 +70,13 @@ class tensor_mixin(object):
             dims, vidx = check_multiplication_dims(mode, self.ndim, len(V), vidx=True, without=without)
             Y = self._ttm_compute(V[vidx[0]], dims[0], transp)
             for i in xrange(1, len(dims)):
-                Y = self.ttm_compute(Y, V[vidx[i]], dims[i], transp)
+                Y = Y._ttm_compute(V[vidx[i]], dims[i], transp)
         return Y
 
         def ttv(self, v, dims=[]):
             """
             Tensor times vector product
-        
+
             Parameter
             ---------
             """
@@ -85,6 +94,9 @@ class tensor_mixin(object):
             pass
 
 
+def istensor(X):
+    return isinstance(X, tensor_mixin)
+
 def __ttm_single(self, V, mode, transp):
     """
     Helper function, dispatches ttm to sparse or dense tensor impementation
@@ -95,7 +107,6 @@ def __ttm_single(self, V, mode, transp):
         return T.ttm(V, mode, transp)
     elif isinstance(T, np.ndarray):
         return tensor(T).ttm(V, mode, transp)
-
 
 
 
@@ -123,35 +134,31 @@ def check_multiplication_dims(dims, N, M, vidx=False, without=False):
     else:
         return sdims
 
+# dynamically create module level functions
+conv_funcs = [
+    'norm',
+    'ttm',
+    'ttv',
+    'unfold'
+]
+
+for fname in conv_funcs:
+    def call_on_me(obj, *args, **kwargs):
+        func = getattr(obj, fname)
+        return func(*args, **kwargs)
+
+    nfunc = types.FunctionType(
+        call_on_me.func_code,
+        {'getattr': getattr, 'fname': fname},
+        name=fname,
+        argdefs=call_on_me.func_defaults,
+        closure=call_on_me.func_closure
+
+    )
+    setattr(sys.modules[__name__], fname, nfunc)
 
 def unfold(X, n):
-    """
-    Unfold X in mode n
-
-    >>> T = zeros((3, 4, 2))
-    >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
-    >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
-
-    >>> unfold(T, 0)
-    array([[  1.,   4.,   7.,  10.,  13.,  16.,  19.,  22.],
-           [  2.,   5.,   8.,  11.,  14.,  17.,  20.,  23.],
-           [  3.,   6.,   9.,  12.,  15.,  18.,  21.,  24.]])
-
-    >>> unfold(T, 1)
-    array([[  1.,   2.,   3.,  13.,  14.,  15.],
-           [  4.,   5.,   6.,  16.,  17.,  18.],
-           [  7.,   8.,   9.,  19.,  20.,  21.],
-           [ 10.,  11.,  12.,  22.,  23.,  24.]])
-
-    >>> unfold(T, 2)
-    array([[  1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,  11.,
-             12.],
-           [ 13.,  14.,  15.,  16.,  17.,  18.,  19.,  20.,  21.,  22.,  23.,
-             24.]])
-    """
-    if issparse(X):
-        return X.unfold([n]).tocsr()
-    elif isinstance(X, tt.tensor):
+    if istensor(X):
         return X.unfold(n)
     elif isinstance(X, np.ndarray):
         return unfold(tt.tensor(X), n)
@@ -160,10 +167,16 @@ def unfold(X, n):
 
 
 def fold(X, n, shape):
-    if issparse(X):
+    # assume objs with fold method are unfolded tensor objects
+    # TODO: replace by mixin
+    if hasattr(X, 'fold'):
         return X.fold(n, shape)
+    # handle dense matrices
     elif isinstance(X, np.ndarray):
         return unfolded_tensor(X, n, shape).fold()
+    # handle sparse matrixes
+    elif isinstance(X, tuple):
+        return unfolded_sptensor(X, None, n, [], shape).fold()
 
 
 def transpose(X, axes=None):
@@ -198,7 +211,7 @@ def nvecs(X, n, rank, do_flipsign=True):
     """
     Eigendecomposition of mode-n unfolding of a tensor
     """
-    Xn = unfold(X, n)
+    Xn = X.unfold(n)
     Y = Xn.dot(Xn.T)
     if issparse_mat(Y):
         _, U = eigsh(Y, rank, which='LM')
@@ -212,19 +225,6 @@ def nvecs(X, n, rank, do_flipsign=True):
     if do_flipsign:
         U = flipsign(U)
     return U
-
-
-def norm(X):
-    """
-    Frobenius norm for tensors
-
-    See
-    [Kolda and Bader, 2009; p.457]
-    """
-    if issparse(X):
-        return np.linalg.norm(X.vals)
-    else:
-        return np.linalg.norm(X.flatten())
 
 
 def flipsign(U):
