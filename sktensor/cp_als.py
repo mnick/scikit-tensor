@@ -18,10 +18,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import time
 import numpy as np
-from numpy import array, dot, ones, sqrt, diag
+from numpy import array, dot, ones, sqrt
 from scipy.linalg import pinv
 from numpy.random import rand
-from core import mttkrp, ktensor, nvecs, norm
+from core import nvecs, norm
+from ktensor import ktensor
 
 _log = logging.getLogger('CP-ALS')
 __DEF_MAXITER = 500
@@ -51,11 +52,11 @@ def cp_als(X, rank, dtype=np.float32, **kwargs):
         fitold = fit
 
         for n in range(N):
-            Unew = mttkrp(X, U, n)
+            Unew = X.uttkrp(U, n)
             Y = ones((rank, rank), dtype=dtype)
             for i in (range(n) + range(n + 1, N)):
                 Y = Y * dot(U[i].T, U[i])
-            Unew = dot(Unew, pinv(Y))
+            Unew = Unew.dot(pinv(Y))
             # Normalize
             if itr == 0:
                 lmbda = sqrt((Unew ** 2).sum(axis=0))
@@ -83,15 +84,15 @@ def cp_als(X, rank, dtype=np.float32, **kwargs):
 
 
 def __init(init, X, N, rank, dtype):
-    Uinit = [None]
+    Uinit = [None for _ in range(N)]
     if isinstance(init, list):
         Uinit = init
     elif init == 'random':
         for n in range(1, N):
-            Uinit.append(array(rand(X.shape[n], rank), dtype=dtype))
+            Uinit[n] = array(rand(X.shape[n], rank), dtype=dtype)
     elif init == 'nvecs':
         for n in range(1, N):
-            Uinit.append(array(nvecs(X, n, rank), dtype=dtype))
+            Uinit[n] = array(nvecs(X, n, rank), dtype=dtype)
     else:
         raise 'Unknown option (init=%s)' % str(init)
     return Uinit
