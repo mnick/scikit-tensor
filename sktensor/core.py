@@ -73,25 +73,29 @@ class tensor_mixin(object):
                 Y = Y._ttm_compute(V[vidx[i]], dims[i], transp)
         return Y
 
-        def ttv(self, v, dims=[]):
-            """
-            Tensor times vector product
+    def ttv(self, v, dims=[]):
+        """
+        Tensor times vector product
 
-            Parameter
-            ---------
-            """
-            if not isinstance(v, tuple):
-                v = (v, )
-            dims, vidx = check_multiplication_dims(dims, self.ndim, len(v), vidx=True)
-            for i in range(len(dims)):
-                if not len(v[vidx[i]]) == self.shape[dims[i]]:
-                    raise ValueError('Multiplicant is wrong size')
-            remdims = np.setdiff1d(range(self.ndim), dims)
-            return self._ttv_compute(v, dims, vidx, remdims)
+        Parameter
+        ---------
+        """
+        if not isinstance(v, tuple):
+            v = (v, )
+        dims, vidx = check_multiplication_dims(dims, self.ndim, len(v), vidx=True)
+        for i in range(len(dims)):
+            if not len(v[vidx[i]]) == self.shape[dims[i]]:
+                raise ValueError('Multiplicant is wrong size')
+        remdims = np.setdiff1d(range(self.ndim), dims)
+        return self._ttv_compute(v, dims, vidx, remdims)
 
-        @abstractmethod
-        def _ttm_compute(self, V, mode, transp):
-            pass
+    @abstractmethod
+    def _ttm_compute(self, V, mode, transp):
+        pass
+
+    @abstractmethod
+    def _ttv_compute(self, v, dims, vidx, remdims):
+        pass
 
 
 def istensor(X):
@@ -144,12 +148,20 @@ conv_funcs = [
 
 for fname in conv_funcs:
     def call_on_me(obj, *args, **kwargs):
+        if not istensor(obj):
+            raise ValueError('%s() object must be tensor (%s)' % (fname, type(obj)))
         func = getattr(obj, fname)
         return func(*args, **kwargs)
 
     nfunc = types.FunctionType(
         call_on_me.func_code,
-        {'getattr': getattr, 'fname': fname},
+        {
+            'getattr': getattr,
+            'fname': fname,
+            'istensor': istensor,
+            'ValueError': ValueError,
+            'type': type
+        },
         name=fname,
         argdefs=call_on_me.func_defaults,
         closure=call_on_me.func_closure
@@ -361,3 +373,5 @@ def tvecmat(m, n):
     #print I1s
     #Tmn[I1s] = 1
     #return Tmn.reshape((d,d)).T
+
+# vim: set et:
