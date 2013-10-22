@@ -1,6 +1,6 @@
 """
 sktensor.tucker_hooi - Higher order iterations algorithm for Tucker
-Copyright (C) 2013 Maximilian Nickel <maximilian.nickel@iit.it>
+Copyright (C) 2013 Maximilian Nickel <mnick@mit.edu>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

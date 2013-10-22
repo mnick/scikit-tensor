@@ -1,6 +1,6 @@
 """
 sktensor.sptensor - base module for sparse tensors
-Copyright (C) 2013 Maximilian Nickel <maximilian.nickel@iit.it>
+Copyright (C) 2013 Maximilian Nickel <mnick@mit.edu>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
