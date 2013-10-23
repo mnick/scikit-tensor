@@ -1,24 +1,25 @@
 import numpy as np
-from numpy import cumprod, array, arange, zeros, floor, dot, argsort
+from numpy import cumprod, array, arange, zeros, floor, dot, lexsort
 from operator import isNumberType
 
 
-def accum(subs, vals, func=np.sum, sorted=False, sz=None, with_subs=False):
+def accum(subs, vals, func=np.sum, sorted=False, shape=None, with_subs=False):
     """
     NumPy implementation for Matlab's accumarray
     """
-    # sort accmap for ediff of not sorted
+
+    # sort accmap for ediff if not sorted
     if not sorted:
-        sidx = argsort(subs, axis=0)
-        subs = subs[sidx]
+        sidx = lexsort(subs, axis=0)
+        subs = [sub[sidx] for sub in subs]
         vals = vals[sidx]
     idx = np.where(np.ediff1d(subs, to_begin=[1], to_end=[1]))[0]
 
     # create values array
-    if sz is None:
+    if shape is None:
         nvals = np.zeros(len(idx) - 1)
     else:
-        nvals = np.zeros(sz)
+        nvals = np.zeros(shape)
     for i in xrange(len(idx) - 1):
         nvals[i] = func(vals[idx[i]:idx[i + 1]])
 
