@@ -112,14 +112,14 @@ class sptensor(tensor_mixin):
 
         # Case 2: result is a vector
         if len(remdims) == 1:
-            c = accum(nsubs, nvals, nsz)
-            if len(np.nonzero(c)[0]) <= 0.5 * nsz:
-                return sptensor(arange(nsz), c)
+            c = accum(nsubs, nvals, shape=nshp)
+            if len(np.nonzero(c)[0]) <= 0.5 * prod(nshp):
+                return sptensor(arange(nshp), c)
             else:
-                return nvals
+                return c
 
         # Case 3: result is an array
-        return sptensor(nsubs, nvals, shape=nsz, accumfun=np.sum)
+        return sptensor(nsubs, nvals, shape=nshp, accumfun=np.sum)
 
     def sttm_me_compute(self, V, edims, sdims, transp):
         """
