@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from numpy import array, prod, argsort
-from sktensor.core import tensor_mixin
+from sktensor.core import tensor_mixin, khatrirao
 
 
 class dtensor(tensor_mixin, np.ndarray):
@@ -52,7 +52,7 @@ class dtensor(tensor_mixin, np.ndarray):
         newT = np.transpose(newT, argsort(order))
         return dtensor(newT)
 
-    def __ttv_compute(T, v, dims, vidx, remdims):
+    def _ttv_compute(self, v, dims, vidx, remdims):
         """
         Tensor times vector product
 
@@ -61,11 +61,11 @@ class dtensor(tensor_mixin, np.ndarray):
         """
         if not isinstance(v, tuple):
             raise ValueError('v must be a tuple of vectors')
-        ndim = T.ndim
+        ndim = self.ndim
         order = list(remdims) + list(dims)
         if ndim > 1:
-            T = np.transpose(T, order)
-        sz = array(T.shape)[order]
+            T = np.transpose(self, order)
+        sz = array(self.shape)[order]
         for i in np.arange(len(dims), 0, -1):
             T = T.reshape((sz[:ndim - 1].prod(), sz[ndim - 1]))
             T = T.dot(v[vidx[i - 1]])
@@ -80,12 +80,12 @@ class dtensor(tensor_mixin, np.ndarray):
 
         Parameters
         ----------
-        mode: int
+        mode : int
             Mode in which tensor is unfolded
 
         Returns
         -------
-        unfolded_dtensor: unfolded_dtensor object
+        unfolded_dtensor : unfolded_dtensor object
 
         >>> T = zeros((3, 4, 2))
         >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
@@ -122,11 +122,39 @@ class dtensor(tensor_mixin, np.ndarray):
         """
         Frobenius norm for tensors
 
-        See
+        References
         ---
         [Kolda and Bader, 2009; p.457]
         """
         return np.linalg.norm(self)
+
+    def uttkrp(self, U, n):
+        """
+        Unfolded tensor times Khatri-Rao product for dense tensors
+
+        Parameters
+        ----------
+        X : tensor_mixin
+        U : list of array-like
+        n : int
+
+        See also
+        --------
+        For efficient computations unfolded tensor times Khatri-Rao products
+        for specialized tensors see also
+        - :func::`sptensor.uttkrp`
+        - ktensor.uttkrp
+        - ttensor.uttkrp
+
+        References
+        ----------
+        [1] B.W. Bader, T.G. Kolda
+            Efficient Matlab Computations With Sparse and Factored Tensors
+            SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
+        """
+        order = range(n) + range(n + 1, self.ndim)
+        Z = khatrirao(tuple(U[i] for i in order), reverse=True)
+        return self.unfold(n).dot(Z)
 
 
 class unfolded_dtensor(np.ndarray):
