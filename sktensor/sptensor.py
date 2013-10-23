@@ -26,6 +26,15 @@ from sktensor.utils import accum
 from sktensor.dtensor import unfolded_dtensor
 
 
+__all__ = [
+    'concatenate',
+    'fromarray',
+    'issparse',
+    'sptensor',
+    'unfolded_sptensor',
+]
+
+
 class sptensor(tensor_mixin):
     """
     Sparse tensor class. Stores data in COO format.
@@ -86,6 +95,32 @@ class sptensor(tensor_mixin):
 
         return newT
 
+    def _ttv_compute(self, v, dims, vidx, remdims):
+        nvals = self.vals
+        nsubs = self.subs
+        for i in xrange(len(dims)):
+            idx = nsubs[dims[i]]
+            w = v[vidx[i]]
+            nvals = nvals * w[idx]
+
+        # Case 1: all dimensions used -> return sum
+        if len(remdims) == 0:
+            return nvals.sum()
+
+        nsubs = tuple(self.subs[i] for i in remdims)
+        nshp = tuple(self.shape[i] for i in remdims)
+
+        # Case 2: result is a vector
+        if len(remdims) == 1:
+            c = accum(nsubs, nvals, nsz)
+            if len(np.nonzero(c)[0]) <= 0.5 * nsz:
+                return sptensor(arange(nsz), c)
+            else:
+                return nvals
+
+        # Case 3: result is an array
+        return sptensor(nsubs, nvals, shape=nsz, accumfun=np.sum)
+
     def sttm_me_compute(self, V, edims, sdims, transp):
         """
         Assume Y = T x_i V_i for i = 1...n can fit into memory
@@ -123,6 +158,16 @@ class sptensor(tensor_mixin):
         ridx = _build_idx(self.subs, self.vals, rdims, self.shape)
         cidx = _build_idx(self.subs, self.vals, cdims, self.shape)
         return unfolded_sptensor((self.vals, (ridx, cidx)), (M, N), rdims, cdims, self.shape)
+
+    def uttkrp(self, U, mode):
+        R = U[1].shape[1] if mode == 0 else U[0].shape[1]
+        dims = range(0, mode) + range(mode + 1, self.ndim)
+        V = zeros((self.shape[mode], R))
+        for r in xrange(R):
+            Z = tuple(U[n][:, r] for n in dims)
+            V[:, r] = self.ttv(Z, mode, without=True)
+        return V
+
 
     def transpose(self, axes=None):
         if axes is None:
