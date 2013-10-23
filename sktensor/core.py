@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from numpy import array, dot, outer, zeros, ones, arange, kron
+from numpy import array, dot, zeros, ones, arange, kron
 from numpy import setdiff1d
 from scipy.linalg import eigh
 from scipy.sparse import issparse as issparse_mat
@@ -73,16 +73,18 @@ class tensor_mixin(object):
                 Y = Y._ttm_compute(V[vidx[i]], dims[i], transp)
         return Y
 
-    def ttv(self, v, dims=[]):
+    def ttv(self, v, dims=[], without=False):
         """
         Tensor times vector product
 
-        Parameter
-        ---------
+        Parameters
+        ----------
+        v : tuple of 1-d arrays
+        dims :
         """
         if not isinstance(v, tuple):
             v = (v, )
-        dims, vidx = check_multiplication_dims(dims, self.ndim, len(v), vidx=True)
+        dims, vidx = check_multiplication_dims(dims, self.ndim, len(v), vidx=True, without=without)
         for i in range(len(dims)):
             if not len(v[vidx[i]]) == self.shape[dims[i]]:
                 raise ValueError('Multiplicant is wrong size')
@@ -98,7 +100,7 @@ class tensor_mixin(object):
         pass
 
     @abstractmethod
-    def uttkrp(self, U, n):
+    def uttkrp(self, U, mode):
         """
         Unfolded tensor times Khatri-Rao product for tensors
 
@@ -125,6 +127,10 @@ class tensor_mixin(object):
         """
         pass
 
+    @abstractmethod
+    def transpose(self, axes=None):
+        pass
+
 
 def istensor(X):
     return isinstance(X, tensor_mixin)
@@ -133,9 +139,10 @@ def istensor(X):
 # dynamically create module level functions
 conv_funcs = [
     'norm',
+    'transpose',
     'ttm',
     'ttv',
-    'unfold'
+    'unfold',
 ]
 
 for fname in conv_funcs:
@@ -185,41 +192,6 @@ def check_multiplication_dims(dims, N, M, vidx=False, without=False):
         return sdims, vidx
     else:
         return sdims
-
-def unfold(X, n):
-    if istensor(X):
-        return X.unfold(n)
-    elif isinstance(X, np.ndarray):
-        return unfold(tt.tensor(X), n)
-    else:
-        raise ValueError('Unsupported object (%s)' % type(X))
-
-
-def fold(X, n, shape):
-    # assume objs with fold method are unfolded tensor objects
-    # TODO: replace by mixin
-    if hasattr(X, 'fold'):
-        return X.fold(n, shape)
-    # handle dense matrices
-    elif isinstance(X, np.ndarray):
-        return unfolded_tensor(X, n, shape).fold()
-    # handle sparse matrixes
-    elif isinstance(X, tuple):
-        return unfolded_sptensor(X, None, n, [], shape).fold()
-
-
-def transpose(X, axes=None):
-    if issparse(X):
-        return stt.transpose(X, axes=axes)
-    else:
-        return np.transpose(X, axes=axes)
-
-
-def concatenate(tpl, axis=None):
-    if issparse(tpl[0]):
-        return stt.concatenate(tpl, axis)
-    else:
-        return np.concatenate(tpl, axis)
 
 
 def innerprod(X, Y):
