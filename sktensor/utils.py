@@ -1,6 +1,5 @@
 import numpy as np
-from numpy import cumprod, array, arange, zeros, floor, dot, lexsort
-from operator import isNumberType
+from numpy import cumprod, array, arange, zeros, floor, lexsort
 
 
 def accum(subs, vals, func=np.sum, sorted=False, shape=None, with_subs=False):
@@ -28,12 +27,6 @@ def accum(subs, vals, func=np.sum, sorted=False, shape=None, with_subs=False):
         return nvals, subs[idx[:-1]]
     else:
         return nvals
-
-
-#def ravel_index(subs, shape):
-#    subs = array(subs).T
-#    mult = [1] + list(cumprod(array(shape)[:-1]))
-#    return dot(subs, array(mult).T)
 
 
 def unravel_dimension(shape, idx):
