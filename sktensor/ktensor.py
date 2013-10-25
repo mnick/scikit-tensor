@@ -21,6 +21,36 @@ from sktensor.core import khatrirao
 
 
 class ktensor(object):
+    """
+    Tensor stored in decomposed form as a Kruskal operator.
+
+    Intended Usage
+        The Kruskal operator is particularly useful to store
+        the results of a CP decomposition.
+
+    Parameters
+    ----------
+    U : list of ndarrays
+        Factor matrices from which the tensor representation
+        is created. All factor matrices ``U[i]`` must have the
+        same number of columns, but can have different
+        number of rows.
+    lmbda : array_like of floats, optional
+        Weights for each dimension of the Kruskal operator.
+        ``len(lambda)`` must be equal to ``U[i].shape[1]``
+
+    See also
+    --------
+    sktensor.dtensor : Dense tensors
+    sktensor.sptensor : Sparse tensors
+    sktensor.ttensor : Tensors stored in form of the Tucker operator
+
+    References
+    ----------
+    .. [1] B.W. Bader, T.G. Kolda
+           Efficient Matlab Computations With Sparse and Factored Tensors
+           SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
+    """
 
     def __init__(self, U, lmbda=None):
         self.U = U
@@ -32,29 +62,24 @@ class ktensor(object):
         if lmbda is None:
             self.lmbda = ones(self.rank)
 
-    def uttkrp(self, U, n):
+    def uttkrp(self, U, mode):
 
         """
         Unfolded tensor times Khatri-Rao product for Kruskal tensors
 
         Parameters
         ----------
-        X: tensor_mixin
-        U: list of array-like
-        n: int
+        X : tensor_mixin
+            Tensor whose unfolding should be multiplied.
+        U : list of array_like
+            Matrices whose Khatri-Rao product should be multiplied.
+        mode : int
+            Mode in which X should be unfolded.
 
         See also
         --------
-        For efficient computations unfolded tensor times Khatri-Rao products
-        for other tensors see also
-        - sptensor.uttkrp
-        - ttensor.uttkrp
-
-        References
-        ----------
-        [1] B.W. Bader, T.G. Kolda
-            Efficient Matlab Computations With Sparse and Factored Tensors
-            SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
+        sktensor.sptensor.uttkrp : Efficient computation of uttkrp for sparse tensors
+        ttensor.uttkrp : Efficient computation of uttkrp for Tucker operators
         """
         N = len(self.shape)
         if n == 1:
@@ -67,6 +92,14 @@ class ktensor(object):
         return dot(self.U[n], W)
 
     def norm(self):
+        """
+        Efficient computation of the Frobenius norm for ktensors [1]_
+
+        Returns
+        -------
+        norm : float
+            Frobenius norm of the ktensor
+        """
         N = len(self.shape)
         coef = outer(self.lmbda, self.lmbda)
         for i in range(N):
@@ -74,6 +107,19 @@ class ktensor(object):
         return np.sqrt(coef.sum())
 
     def innerprod(self, X):
+        """
+        Efficient computation of the inner product of a ktensor with another tensor
+
+        Parameters
+        ----------
+        X : tensor_mixin
+            Tensor to compute the inner product with.
+
+        Returns
+        -------
+        p : float
+            Inner product between ktensor and X.
+        """
         N = len(self.shape)
         R = len(self.lmbda)
         res = 0
@@ -85,6 +131,15 @@ class ktensor(object):
         return res
 
     def toarray(self):
+        """
+        Converts a ktensor into a dense multidimensional array
+
+        Returns
+        -------
+        arr : ndarray
+            Fully computed multidimensional array whose shape matches
+            the original ktensor.
+        """
         A = dot(self.lmbda, khatrirao(tuple(self.U)).T)
         return A.reshape(self.shape)
 
