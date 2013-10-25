@@ -37,9 +37,32 @@ __all__ = [
 
 class sptensor(tensor_mixin):
     """
-    Sparse tensor class. Stores data in COO format.
+    Sparse tensor class. Stores data in COOrdinate format.
 
-    >>> S = sptensor(([0,1,2], [3,2,0], [2,2,2]), [1,1,1])
+    Sparse tensors can be instantiated via
+
+    Parameters
+    ----------
+    subs : n-tuple of array-likes
+        Subscripts of the nonzero entries in the tensor.
+        Length of tuple n must be equal to dimension of tensor.
+    vals : array-like
+        Values of the nonzero entries in the tensor.
+    shape : n-tuple, optional
+        Shape of the sparse tensor.
+        Length of tuple n must be equal to dimension of tensor.
+    dtype : dtype, optional
+        Type of the entries in the tensor
+    accumfun : function pointer
+        Function to be accumulate duplicate entries
+
+    Examples
+    --------
+    >>> S = sptensor(([0,1,2], [3,2,0], [2,2,2]), [1,1,1], shape=(10, 20, 5), dtype=np.float)
+    >>> S.shape
+    (10, 20, 5)
+    >>> S.dtype
+    <type 'float'>
 
     """
 
@@ -49,7 +72,7 @@ class sptensor(tensor_mixin):
         if len(subs[0]) != len(vals):
             raise ValueError('Subscripts and values must be of equal length')
         if dtype is None:
-            dtype = vals.dtype
+            dtype = array(vals).dtype
         for i in range(len(subs)):
             if array(subs[i]).dtype.kind != 'i':
                 raise ValueError('Subscripts must be integers')
@@ -65,17 +88,17 @@ class sptensor(tensor_mixin):
         self.dtype = dtype
 
         if shape is None:
-            self.shape = array(subs).max(axis=1).flatten()
+            self.shape = tuple(array(subs).max(axis=1).flatten())
         else:
-            self.shape = array(shape, dtype=np.int)
+            self.shape = tuple(int(d) for d in shape)
         self.ndim = len(subs)
 
     def __eq__(self, other):
-        self.sort()
-        other.sort()
+        self._sort()
+        other._sort()
         return (self.vals == other.vals).all() and (array(self.subs) == array(other.subs)).all()
 
-    def sort(self):
+    def _sort(self):
         subs = array(self.subs)
         sidx = lexsort(subs)
         self.subs = tuple(z.flatten()[sidx] for z in vsplit(subs, len(self.shape)))
@@ -89,7 +112,7 @@ class sptensor(tensor_mixin):
         shape = copy(self.shape)
         shape[mode] = V.shape[0]
         if issparse_mat(Z):
-            newT = fold((Z.row, Z.col), Z.data, [mode], shape)
+            newT = unfolded_sptensor((Z.data, (Z.row, Z.col)), [mode], None, shape=shape).fold()
         else:
             newT = unfolded_dtensor(Z.T, mode, shape).fold()
 
@@ -130,7 +153,6 @@ class sptensor(tensor_mixin):
         # Determine size of Y
         for n in np.union1d(edims, sdims):
             shapeY[n] = V[n].shape[1] if transp else V[n].shape[0]
-        print shapeY
 
         # Allocate Y (final result) and v (vectors for elementwise computations)
         Y = zeros(shapeY)
@@ -183,8 +205,8 @@ class sptensor(tensor_mixin):
         """
         Frobenius norm for tensors
 
-        See
-        ---
+        References
+        ----------
         [Kolda and Bader, 2009; p.457]
         """
         return np.linalg.norm(self.vals)
@@ -231,12 +253,14 @@ def fromarray(A):
 
 def concatenate(tpl, axis=None):
     """
-    Concatenate sparse tensors along axis
+    Concatenate sparse tensors
 
     Parameter
     ---------
-    tpl:  Tuple of sparse tensors
-    axis:  Axis for concatenation
+    tpl :  tuple of sparse tensors
+        Tensors to be concatenated.
+    axis :  int, optional
+        Axis along which concatenation should take place
     """
     if axis is None:
         raise NotImplementedError(
@@ -269,10 +293,6 @@ def _single_concatenate(ten, other, axis):
     return sptensor(nsubs, nvals, nshape)
 
 
-def issparse(obj):
-    return isinstance(obj, sptensor)
-
-
 def _build_idx(subs, vals, dims, tshape):
     shape = array(tshape[dims], ndmin=1)
     dims = array(dims, ndmin=1)
@@ -285,31 +305,31 @@ def _build_idx(subs, vals, dims, tshape):
     return idx
 
 
-def ttv(T, v, dims, vidx, remdims):
-    if not isinstance(v, tuple):
-        raise ValueError('v must be a tuple of vectors')
-    nvals = T.vals
-    for n in range(len(dims)):
-        idx = T.subs[dims[n]]
-        w = v[vidx[n]]
-        W = w[idx]
-        nvals = nvals * W
-
-    # all dimensions used, return sum
-    if len(remdims) == 0:
-        return nvals.sum()
-
-    # otherwise accumulate
-    nsubs = [T.subs[r] for r in remdims]
-    nsz = [T.shape[r] for r in remdims]
-
-    # result is a vector
-    if len(remdims) == 1:
-        c = accum(nsubs, nvals, nsz)
-        if len(np.nonzero(c)[0]) <= 0.5 * nsz:
-            return sptensor(arange(nsz), c)
-        else:
-            return nvals
-
-    # result is an array
-    return sptensor(nsubs, nvals, shape=nsz, accumfun=np.sum)
+#def ttv(T, v, dims, vidx, remdims):
+#    if not isinstance(v, tuple):
+#        raise ValueError('v must be a tuple of vectors')
+#    nvals = T.vals
+#    for n in range(len(dims)):
+#        idx = T.subs[dims[n]]
+#        w = v[vidx[n]]
+#        W = w[idx]
+#        nvals = nvals * W
+#
+#    # all dimensions used, return sum
+#    if len(remdims) == 0:
+#        return nvals.sum()
+#
+#    # otherwise accumulate
+#    nsubs = [T.subs[r] for r in remdims]
+#    nsz = [T.shape[r] for r in remdims]
+#
+#    # result is a vector
+#    if len(remdims) == 1:
+#        c = accum(nsubs, nvals, nsz)
+#        if len(np.nonzero(c)[0]) <= 0.5 * nsz:
+#            return sptensor(arange(nsz), c)
+#        else:
+#            return nvals
+#
+#    # result is an array
+#    return sptensor(nsubs, nvals, shape=nsz, accumfun=np.sum)
