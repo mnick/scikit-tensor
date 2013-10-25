@@ -20,6 +20,23 @@ from sktensor.core import tensor_mixin, khatrirao
 
 
 class dtensor(tensor_mixin, np.ndarray):
+    """
+    Class to store **dense** tensors
+
+    Parameters
+    ----------
+    input_array : np.ndarray
+        Multidimenional numpy array which holds the entries of the tensor
+
+    Examples
+    --------
+    Create dense tensor from numpy array
+
+    >>> T = np.zeros((3, 4, 2))
+    >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
+    >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
+    >>> T = dtensor(T)
+    """
 
     def __new__(cls, input_array):
         obj = np.asarray(input_array).view(cls)
@@ -84,23 +101,28 @@ class dtensor(tensor_mixin, np.ndarray):
         Returns
         -------
         unfolded_dtensor : unfolded_dtensor object
+            Tensor unfolded along mode
 
-        >>> T = zeros((3, 4, 2))
+        Examples
+        --------
+        Create dense tensor from numpy array
+
+        >>> T = np.zeros((3, 4, 2))
         >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
         >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
         >>> T = dtensor(T)
+
+        Unfolding of dense tensors
 
         >>> T.unfold(0)
         array([[  1.,   4.,   7.,  10.,  13.,  16.,  19.,  22.],
                [  2.,   5.,   8.,  11.,  14.,  17.,  20.,  23.],
                [  3.,   6.,   9.,  12.,  15.,  18.,  21.,  24.]])
-
         >>> T.unfold(1)
         array([[  1.,   2.,   3.,  13.,  14.,  15.],
                [  4.,   5.,   6.,  16.,  17.,  18.],
                [  7.,   8.,   9.,  19.,  20.,  21.],
                [ 10.,  11.,  12.,  22.,  23.,  24.]])
-
         >>> T.unfold(2)
         array([[  1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,  11.,
                  12.],
@@ -113,7 +135,8 @@ class dtensor(tensor_mixin, np.ndarray):
         #order = ([n], range(n) + range(n + 1, N))
         order = ([mode], range(N - 1, mode, -1) + range(mode - 1, -1, -1))
         newsz = (sz[order[0]], prod(sz[order[1]]))
-        arr = np.transpose(self, axes=order[0] + order[1]).reshape(newsz)
+        arr = transpose(self, axes=(order[0] + order[1]))
+        arr = arr.reshape(newsz)
         return unfolded_dtensor(arr, mode, self.shape)
 
     def norm(self):
@@ -181,3 +204,21 @@ class unfolded_dtensor(np.ndarray):
         arr = self.reshape(tuple(shape[order[0]],) + tuple(shape[order[1]]))
         arr = np.transpose(arr, argsort(order[0] + order[1]))
         return dtensor(arr)
+
+def transpose(dten, axes=None):
+    """
+    Compute transpose of dense tensor
+
+    Parameters
+    ----------
+    dten : dtensor
+        Dense tensor to be transposed.
+    axes : array_like of ints, optional
+        Permute the axes according to the values given.
+
+    Returns
+    -------
+    d : dtensor
+        dtensor with axes permuted.
+    """
+    return dtensor(np.transpose(array(dten), axes=axes))
