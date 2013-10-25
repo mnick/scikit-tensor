@@ -34,6 +34,15 @@ def modulefunction(func):
 
 
 class tensor_mixin(object):
+    """
+    Base tensor class from which all tensor classes are subclasses.
+    Can not be instaniated
+
+    See also
+    --------
+    sktensor.dtensor : Subclass for **dense** tensors.
+    sktensor.sptensor : Subclass for **sparse** tensors.
+    """
 
     __metaclass__ = ABCMeta
 
@@ -41,20 +50,41 @@ class tensor_mixin(object):
         """
         Tensor times matrix product
 
-        Parameter
-        ---------
-        T:
+        Parameters
+        ----------
+        V : M x N array_like or list of M_i x N_i array_likes
+            Matrix or list of matrices for which the tensor times matrix
+            products should be performed
+        mode : int or list of int's, optional
+            Modes along which the tensor times matrix products should be
+            performed
+        transp: boolean, optional
+            If True, tensor times matrix products are computed with
+            transpositions of matrices
+        without: boolean, optional
+            It True, tensor times matrix products are performed along all
+            modes **except** the modes specified via parameter ``mode``
+
+
+        Examples
+        --------
+        Create dense tensor
 
         >>> T = zeros((3, 4, 2))
         >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
         >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
+        >>> T = dtensor(T)
+
+        Create matrix
+
         >>> V = array([[1, 3, 5], [2, 4, 6]])
 
-        >>> Y = ttm(T, V, 0)
+        Multiply tensor with matrix along mode 0
+
+        >>> Y = T.ttm(V, 0)
         >>> Y[:, :, 0]
         array([[  22.,   49.,   76.,  103.],
             [  28.,   64.,  100.,  136.]])
-
         >>> Y[:, :, 1]
         array([[ 130.,  157.,  184.,  211.],
             [ 172.,  208.,  244.,  280.]])
@@ -95,6 +125,10 @@ class tensor_mixin(object):
 
     @abstractmethod
     def _ttv_compute(self, v, dims, vidx, remdims):
+        pass
+
+    @abstractmethod
+    def unfold(self, rdims, cdims=None, transp=False):
         pass
 
     @abstractmethod
@@ -267,17 +301,15 @@ def khatrirao(A, reverse=False):
     reverse: boolean
       Compute Khatri-Rao product in reverse order
 
-    >>> import numpy as np
+    Examples
+    --------
     >>> A = np.random.randn(5, 2)
     >>> B = np.random.randn(4, 2)
     >>> C = khatrirao((A, B))
-
     >>> C.shape
     (20, 2)
-
     >>> (C[:, 0] == np.kron(A[:, 0], B[:, 0])).all()
     true
-
     >>> (C[:, 1] == np.kron(A[:, 1], B[:, 1])).all()
     true
     """
