@@ -53,7 +53,7 @@ class dtensor(tensor_mixin, np.ndarray):
         r1 = range(0, mode)
         r2 = range(mode + 1, self.ndim)
         order = [mode] + r1 + r2
-        newT = np.transpose(self, axes=order)
+        newT = transpose(self, axes=order)
         newT = newT.reshape(sz[mode], prod(sz[r1 + range(mode + 1, len(sz))]))
         if transp:
             newT = V.T.dot(newT)
@@ -64,7 +64,7 @@ class dtensor(tensor_mixin, np.ndarray):
         newsz = [p] + list(sz[:mode]) + list(sz[mode + 1:])
         newT = newT.reshape(newsz)
         # transpose + argsort(order) equals ipermute
-        newT = np.transpose(newT, argsort(order))
+        newT = transpose(newT, argsort(order))
         return dtensor(newT)
 
     def _ttv_compute(self, v, dims, vidx, remdims):
@@ -79,7 +79,7 @@ class dtensor(tensor_mixin, np.ndarray):
         ndim = self.ndim
         order = list(remdims) + list(dims)
         if ndim > 1:
-            T = np.transpose(self, order)
+            T = transpose(self, order)
         sz = array(self.shape)[order]
         for i in np.arange(len(dims), 0, -1):
             T = T.reshape((sz[:ndim - 1].prod(), sz[ndim - 1]))
@@ -141,10 +141,11 @@ class dtensor(tensor_mixin, np.ndarray):
 
     def norm(self):
         """
-        Frobenius norm for tensors
+        Computes the Frobenius norm for dense tensors
+        :math: norm(X) = \sqrt{\sum_{i_1,\ldots,i_N} x_{i_1,\ldots,i_N}^2}
 
         References
-        ---
+        ----------
         [Kolda and Bader, 2009; p.457]
         """
         return np.linalg.norm(self)
