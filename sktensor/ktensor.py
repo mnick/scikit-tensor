@@ -16,6 +16,11 @@
 import numpy as np
 from numpy import dot, ones, array, outer
 from sktensor.core import khatrirao
+from sktensor.dtensor import dtensor
+
+__all__ = [
+    'ktensor',
+]
 
 
 class ktensor(object):
@@ -53,6 +58,7 @@ class ktensor(object):
     def __init__(self, U, lmbda=None):
         self.U = U
         self.shape = tuple(Ui.shape[0] for Ui in U)
+        self.ndim = len(self.shape)
         self.rank = U[0].shape[1]
         self.lmbda = lmbda
         if not all(array([Ui.shape[1] for Ui in U]) == self.rank):
@@ -79,19 +85,19 @@ class ktensor(object):
         sktensor.sptensor.uttkrp : Efficient computation of uttkrp for sparse tensors
         ttensor.uttkrp : Efficient computation of uttkrp for Tucker operators
         """
-        N = len(self.shape)
-        if n == 1:
+        N = self.ndim
+        if mode == 1:
             R = U[1].shape[1]
         else:
             R = U[0].shape[1]
         W = np.tile(self.lmbda, 1, R)
-        for i in range(n) + range(n + 1, N):
+        for i in range(mode) + range(mode + 1, N):
             W = W * dot(self.U[i].T, U[i])
-        return dot(self.U[n], W)
+        return dot(self.U[mode], W)
 
     def norm(self):
         """
-        Efficient computation of the Frobenius norm for ktensors [1]_
+        Efficient computation of the Frobenius norm for ktensors
 
         Returns
         -------
@@ -130,15 +136,27 @@ class ktensor(object):
 
     def toarray(self):
         """
-        Converts a ktensor into a dense multidimensional array
+        Converts a ktensor into a dense multidimensional ndarray
 
         Returns
         -------
-        arr : ndarray
+        arr : np.ndarray
             Fully computed multidimensional array whose shape matches
             the original ktensor.
         """
         A = dot(self.lmbda, khatrirao(tuple(self.U)).T)
         return A.reshape(self.shape)
+
+    def totensor(self):
+        """
+        Converts a ktensor into a dense tensor
+
+        Returns
+        -------
+        arr : dtensor
+            Fully computed multidimensional array whose shape matches
+            the original ktensor.
+        """
+        return dtensor(self.toarray())
 
 # vim: set et:
