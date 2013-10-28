@@ -22,6 +22,7 @@ from scipy.sparse import issparse as issparse_mat
 from sktensor.core import tensor_mixin
 from sktensor.utils import accum
 from sktensor.dtensor import unfolded_dtensor
+from sktensor.pyutils import inherit_docstring_from
 
 
 __all__ = [
@@ -34,7 +35,9 @@ __all__ = [
 
 class sptensor(tensor_mixin):
     """
-    Sparse tensor class. Stores data in COOrdinate format.
+    A sparse tensor.
+
+    Data is stored in COOrdinate format.
 
     Sparse tensors can be instantiated via
 
@@ -60,7 +63,6 @@ class sptensor(tensor_mixin):
     (10, 20, 5)
     >>> S.dtype
     <type 'float'>
-
     """
 
     def __init__(self, subs, vals, shape=None, dtype=None, accumfun=None):
@@ -141,7 +143,7 @@ class sptensor(tensor_mixin):
         # Case 3: result is an array
         return sptensor(nsubs, nvals, shape=nshp, accumfun=np.sum)
 
-    def sttm_me_compute(self, V, edims, sdims, transp):
+    def _ttm_me_compute(self, V, edims, sdims, transp):
         """
         Assume Y = T x_i V_i for i = 1...n can fit into memory
         """
@@ -172,12 +174,13 @@ class sptensor(tensor_mixin):
                 'Incorrect specification of dimensions (rdims: %s, cdims: %s)'
                 % (str(rdims), str(cdims))
             )
-        M = prod(self.shape[rdims])
-        N = prod(self.shape[cdims])
+        M = prod([self.shape[r] for r in rdims])
+        N = prod([self.shape[c] for c in cdims])
         ridx = _build_idx(self.subs, self.vals, rdims, self.shape)
         cidx = _build_idx(self.subs, self.vals, cdims, self.shape)
         return unfolded_sptensor((self.vals, (ridx, cidx)), (M, N), rdims, cdims, self.shape)
 
+    @inherit_docstring_from(tensor_mixin)
     def uttkrp(self, U, mode):
         R = U[1].shape[1] if mode == 0 else U[0].shape[1]
         dims = range(0, mode) + range(mode + 1, self.ndim)
@@ -187,8 +190,21 @@ class sptensor(tensor_mixin):
             V[:, r] = self.ttv(Z, mode, without=True)
         return V
 
-
+    @inherit_docstring_from(tensor_mixin)
     def transpose(self, axes=None):
+        """
+        Compute transpose of sparse tensors.
+
+        Parameters
+        ----------
+        axes : array_like of ints, optional
+            Permute the axes according to the values given.
+
+        Returns
+        -------
+        d : dtensor
+            dtensor with axes permuted.
+        """
         if axes is None:
             raise NotImplementedError(
                 'Sparse tensor transposition without axes argument is not supported'
@@ -196,7 +212,6 @@ class sptensor(tensor_mixin):
         nsubs = tuple([self.subs[idx] for idx in axes])
         nshape = [self.shape[idx] for idx in axes]
         return sptensor(nsubs, self.vals, nshape)
-
 
     def norm(self):
         """
@@ -208,7 +223,6 @@ class sptensor(tensor_mixin):
         """
         return np.linalg.norm(self.vals)
 
-
     def toarray(self):
         A = zeros(self.shape)
         A.put(ravel_multi_index(self.subs, tuple(self.shape)), self.vals)
@@ -216,6 +230,43 @@ class sptensor(tensor_mixin):
 
 
 class unfolded_sptensor(coo_matrix):
+    """
+    An unfolded sparse tensor.
+
+    Data is stored in form of a sparse COO matrix.
+    Unfolded_sptensor objects additionall hold information about the
+    original tensor, such that re-folding the tensor into its original
+    shape can be done easily.
+
+    Unfolded_sptensor objects can be instantiated via
+
+    Parameters
+    ----------
+    tpl : (data, (i, j)) tuple
+        Construct sparse matrix from three arrays:
+            1. ``data[:]``   the entries of the matrix, in any order
+            2. ``i[:]``      the row indices of the matrix entries
+            3. ``j[:]``      the column indices of the matrix entries
+        where ``A[i[k], j[k]] = data[k]``.
+    shape : tuple of integers
+        Shape of the unfolded tensor.
+    rdims : array_like of integers
+        Modes of the original tensor that are mapped onto rows.
+    cdims : array_like of integers
+        Modes of the original tensor that are mapped onto columns.
+    ten_shape : tuple of integers
+        Shape of the original tensor.
+    dtype : np.dtype, optional
+        Data type of the unfolded tensor.
+    copy : boolean, optional
+        If true, data and subscripts are copied.
+
+    Returns
+    -------
+    M : unfolded_sptensor
+        Sparse matrix in COO format where ``rdims`` are mapped to rows and
+        ``cdims`` are mapped to columns of the matrix.
+    """
 
     def __init__(self, tpl, shape, rdims, cdims, ten_shape, dtype=None, copy=False):
         self.ten_shape = array(ten_shape)
@@ -228,6 +279,15 @@ class unfolded_sptensor(coo_matrix):
         super(unfolded_sptensor, self).__init__(tpl, shape=shape, dtype=dtype, copy=copy)
 
     def fold(self):
+        """
+        Recreate original tensor by folding unfolded_sptensor according toc
+        ``ten_shape``.
+
+        Returns
+        -------
+        T : sptensor
+            Sparse tensor that is created by refolding according to ``ten_shape``.
+        """
         nsubs = zeros((len(self.data), len(self.ten_shape)), dtype=np.int)
         if len(self.rdims) > 0:
             nidx = unravel_index(self.row, self.ten_shape[self.rdims])
@@ -250,10 +310,10 @@ def fromarray(A):
 
 def concatenate(tpl, axis=None):
     """
-    Concatenate sparse tensors
+    Concatenates sparse tensors.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     tpl :  tuple of sparse tensors
         Tensors to be concatenated.
     axis :  int, optional
@@ -291,7 +351,7 @@ def _single_concatenate(ten, other, axis):
 
 
 def _build_idx(subs, vals, dims, tshape):
-    shape = array(tshape[dims], ndmin=1)
+    shape = array([tshape[d] for d in dims], ndmin=1)
     dims = array(dims, ndmin=1)
     if len(shape) == 0:
         idx = ones(len(vals), dtype=vals.dtype)
