@@ -101,18 +101,24 @@ class tensor_mixin(object):
                 Y = Y._ttm_compute(V[vidx[i]], dims[i], transp)
         return Y
 
-    def ttv(self, v, dims=[], without=False):
+    def ttv(self, v, modes=[], without=False):
         """
         Tensor times vector product
 
         Parameters
         ----------
-        v : tuple of 1-d arrays
-        dims :
+        v : 1-d array or tuple of 1-d arrays
+            Vector to be multiplied with tensor.
+        modes : array_like of integers, optional
+            Modes in which the vectors should be multiplied.
+        without : boolean, optional
+            If True, vectors are multiplied in all modes **except** the
+            modes specified in ``modes``.
+
         """
         if not isinstance(v, tuple):
             v = (v, )
-        dims, vidx = check_multiplication_dims(dims, self.ndim, len(v), vidx=True, without=without)
+        dims, vidx = check_multiplication_dims(modes, self.ndim, len(v), vidx=True, without=without)
         for i in range(len(dims)):
             if not len(v[vidx[i]]) == self.shape[dims[i]]:
                 raise ValueError('Multiplicant is wrong size')
@@ -134,33 +140,62 @@ class tensor_mixin(object):
     @abstractmethod
     def uttkrp(self, U, mode):
         """
-        Unfolded tensor times Khatri-Rao product for tensors
+        Unfolded tensor times Khatri-Rao product:
+        :math:`M = \unfold{X}{3} (U_1 \kr \cdots \kr U_N)`
+
+        Computes the _matrix_ product of the unfolding
+        of a tensor and the Khatri-Rao product of multiple matrices.
+        Efficient computations are perfomed by the respective
+        tensor implementations.
 
         Parameters
         ----------
-        X: tensor_mixin
-        U: list of array-like
-        n: int
+        U : list of array-likes
+            Matrices for which the Khatri-Rao product is computed and
+            which are multiplied with the tensor in mode ``mode``.
+        mode: int
+            Mode in which the Khatri-Rao product of ``U`` is multiplied
+            with the tensor.
+
+        Returns
+        -------
+        M : np.ndarray
+            Matrix which is the result of the matrix product of the unfolding of
+            the tensor and the Khatri-Rao product of ``U``
 
         See also
         --------
         For efficient computations of unfolded tensor times Khatri-Rao products
         for specialiized tensors see also
-        - dtensor.uttkrp
-        - sptensor.uttkrp
-        - ktensor.uttkrp
-        - ttensor.uttkrp
+        dtensor.uttkrp, sptensor.uttkrp, ktensor.uttkrp, ttensor.uttkrp
 
         References
         ----------
-        [1] B.W. Bader, T.G. Kolda
-            Efficient Matlab Computations With Sparse and Factored Tensors
-            SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
+        .. [1] B.W. Bader, T.G. Kolda
+               Efficient Matlab Computations With Sparse and Factored Tensors
+               SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
         """
         pass
 
     @abstractmethod
     def transpose(self, axes=None):
+        """
+        Compute transpose of tensors.
+
+        Parameters
+        ----------
+        axes : array_like of ints, optional
+            Permute the axes according to the values given.
+
+        Returns
+        -------
+        d : tensor_mixin
+            tensor with axes permuted.
+
+        See also
+        --------
+        dtensor.transpose, sptensor.transpose
+        """
         pass
 
 
@@ -228,7 +263,7 @@ def check_multiplication_dims(dims, N, M, vidx=False, without=False):
 
 def innerprod(X, Y):
     """
-    inner prodcut with a Tensor
+    Inner prodcut with a Tensor
     """
     return dot(X.flatten(), Y.flatten())
 
@@ -291,15 +326,15 @@ def scale(X, n):
 # TODO more efficient cython implementation
 def khatrirao(A, reverse=False):
     """
-    Compute the columnwise Khatri-Rao product
+    Compute the columnwise Khatri-Rao product.
 
     Parameters
     ----------
-    A: tuple of ndarrays
-      Matrices for which the columnwise Khatri-Rao product should be computed
+    A : tuple of ndarrays
+        Matrices for which the columnwise Khatri-Rao product should be computed
 
-    reverse: boolean
-      Compute Khatri-Rao product in reverse order
+    reverse : boolean
+        Compute Khatri-Rao product in reverse order
 
     Examples
     --------
