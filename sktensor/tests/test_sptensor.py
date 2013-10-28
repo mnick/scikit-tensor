@@ -95,4 +95,4 @@ def test_ttm():
 
 def test_sttm_me():
     S = sptensor(T.nonzero(), T.flatten(), T.shape)
-    sttm_me_compute(S, U, [1], [0], False)
+    S.ttm_me(U, [1], [0], False)
