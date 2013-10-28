@@ -5,7 +5,7 @@ scikit-tensor is a Python module for multilinear algebra and tensor factorizatio
 
 Dependencies
 ------------
-The required dependencies to build the software are Numpy >= 1.3, SciPy >= 0.7.
+The required dependencies to build the software are `Numpy >= 1.3`, `SciPy >= 0.7`.
 
 Usage
 -----
@@ -33,12 +33,12 @@ This package uses distutils, which is the default way of installing python modul
 
     python setup.py install --user
 
-To install for all users on Unix/Linux::
+To install for all users on Unix/Linux
 
     python setup.py build
     sudo python setup.py install
 
-To install in development mode::
+To install in development mode
 
     python setup.py develop
 
