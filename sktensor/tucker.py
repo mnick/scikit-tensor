@@ -1,4 +1,4 @@
-# sktensor.tucker_hooi - Higher order iterations algorithm for Tucker
+# sktensor.tucker - Algorithms to compute Tucker decompositions
 # Copyright (C) 2013 Maximilian Nickel <mnick@mit.edu>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,30 +22,61 @@ from numpy.random import rand
 from operator import isNumberType
 from core import ttm, nvecs, norm
 
-_log = logging.getLogger('TUCKER HOOI')
+__all__ = [
+    'hooi',
+    'hosvd',
+]
+
+_log = logging.getLogger('TUCKER')
 __DEF_MAXITER = 500
 __DEF_INIT = 'nvecs'
 __DEF_CONV = 1e-7
 
 
-def tucker_hooi(X, rank, **kwargs):
+def hooi(X, rank, **kwargs):
     """
     Compute Tucker decomposition of a tensor using Higher-Order Orthogonal
     Iterations.
 
+    Parameters
+    ----------
+    X : tensor_mixin
+        The tensor to be decomposed
+    rank : array_like
+        The rank of the decomposition for each mode of the tensor.
+        The length of ``rank`` must match the number of modes of ``X``.
+    init : {'random', 'nvecs'}, optional
+        The initialization method to use.
+            - random : Factor matrices are initialized randomly.
+            - nvecs : Factor matrices are initialzed via HOSVD.
+        default : 'nvecs'
+
+    Examples
+    --------
+    Create dense tensor
+
     >>> T = np.zeros((3, 4, 2))
     >>> T[:, :, 0] = [[ 1,  4,  7, 10], [ 2,  5,  8, 11], [3,  6,  9, 12]]
     >>> T[:, :, 1] = [[13, 16, 19, 22], [14, 17, 20, 23], [15, 18, 21, 24]]
+    >>> T = dtensor(T)
 
-    >>> Y = tucker_hooi(T, [2, 3, 1], init='nvecs')
-    >>> Y['core']
+    Compute Tucker decomposition of ``T`` with n-rank [2, 3, 1] via higher-order
+    orthogonal iterations
 
-    >>> Y['U']
+    >>> Y = hooi(T, [2, 3, 1], init='nvecs')
 
-    See
-      L. De Lathauwer, B. De Moor, J. Vandewalle: On the best rank-1 and
-      rank-(R_1, R_2, \ldots, R_N) approximation of higher order tensors;
-      IEEE Trans. Signal Process. 49 (2001), pp. 2262-2271
+    Shape of the core tensor matches n-rank of the decomposition.
+
+    >>> Y['core'].shape
+    (2, 3, 1)
+    >>> Y['U'][1].shape
+    (3, 2)
+
+    References
+    ----------
+    .. [1] L. De Lathauwer, B. De Moor, J. Vandewalle: On the best rank-1 and
+           rank-(R_1, R_2, \ldots, R_N) approximation of higher order tensors;
+           IEEE Trans. Signal Process. 49 (2001), pp. 2262-2271
     """
     # init options
     ainit = kwargs.pop('init', __DEF_INIT)
@@ -91,6 +122,19 @@ def tucker_hooi(X, rank, **kwargs):
             break
     return core, U
 
+def hosvd(X, rank, dims=None, dtype=None, compute_core=True):
+    U = [None for _ in xrange(X.ndim)]
+    if dims is None:
+        dims = range(X.ndim)
+    if dtype is None:
+        dtype = X.dtype
+    for d in dims:
+        U[d] = array(nvecs(X, d, rank[d]), dtype=dtype)
+    if compute_core:
+        core = X.ttm(U, transp=True)
+        return U, core
+    else:
+        return U
 
 def __init(init, X, N, rank, dtype):
     # Don't compute initial factor for first index, gets computed in
@@ -102,6 +146,5 @@ def __init(init, X, N, rank, dtype):
         for n in range(1, N):
             Uinit.append(array(rand(X.shape[n], rank[n]), dtype=dtype))
     elif init == 'nvecs':
-        for n in range(1, N):
-            Uinit.append(array(nvecs(X, n, rank[n]), dtype=dtype))
+        Uinit = hosvd(X, rank, range(1, N), dtype=dtype, compute_core=False)
     return Uinit
