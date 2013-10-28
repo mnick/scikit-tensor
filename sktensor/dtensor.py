@@ -17,6 +17,12 @@
 import numpy as np
 from numpy import array, prod, argsort
 from sktensor.core import tensor_mixin, khatrirao
+from pyutils import inherit_docstring_from
+
+__all__ = [
+    'dtensor',
+    'unfolded_dtensor',
+]
 
 
 class dtensor(tensor_mixin, np.ndarray):
@@ -53,7 +59,7 @@ class dtensor(tensor_mixin, np.ndarray):
         r1 = range(0, mode)
         r2 = range(mode + 1, self.ndim)
         order = [mode] + r1 + r2
-        newT = transpose(self, axes=order)
+        newT = self.transpose(axes=order)
         newT = newT.reshape(sz[mode], prod(sz[r1 + range(mode + 1, len(sz))]))
         if transp:
             newT = V.T.dot(newT)
@@ -64,7 +70,7 @@ class dtensor(tensor_mixin, np.ndarray):
         newsz = [p] + list(sz[:mode]) + list(sz[mode + 1:])
         newT = newT.reshape(newsz)
         # transpose + argsort(order) equals ipermute
-        newT = transpose(newT, argsort(order))
+        newT = newT.transpose(argsort(order))
         return dtensor(newT)
 
     def _ttv_compute(self, v, dims, vidx, remdims):
@@ -79,7 +85,7 @@ class dtensor(tensor_mixin, np.ndarray):
         ndim = self.ndim
         order = list(remdims) + list(dims)
         if ndim > 1:
-            T = transpose(self, order)
+            T = self.transpose(order)
         sz = array(self.shape)[order]
         for i in np.arange(len(dims), 0, -1):
             T = T.reshape((sz[:ndim - 1].prod(), sz[ndim - 1]))
@@ -135,14 +141,14 @@ class dtensor(tensor_mixin, np.ndarray):
         #order = ([n], range(n) + range(n + 1, N))
         order = ([mode], range(N - 1, mode, -1) + range(mode - 1, -1, -1))
         newsz = (sz[order[0]], prod(sz[order[1]]))
-        arr = transpose(self, axes=(order[0] + order[1]))
+        arr = self.transpose(axes=(order[0] + order[1]))
         arr = arr.reshape(newsz)
         return unfolded_dtensor(arr, mode, self.shape)
 
     def norm(self):
         """
         Computes the Frobenius norm for dense tensors
-        :math: norm(X) = \sqrt{\sum_{i_1,\ldots,i_N} x_{i_1,\ldots,i_N}^2}
+        :math:`norm(X) = \sqrt{\sum_{i_1,\ldots,i_N} x_{i_1,\ldots,i_N}^2}`
 
         References
         ----------
@@ -150,33 +156,15 @@ class dtensor(tensor_mixin, np.ndarray):
         """
         return np.linalg.norm(self)
 
+    @inherit_docstring_from(tensor_mixin)
     def uttkrp(self, U, n):
-        """
-        Unfolded tensor times Khatri-Rao product for dense tensors
-
-        Parameters
-        ----------
-        X : tensor_mixin
-        U : list of array-like
-        n : int
-
-        See also
-        --------
-        For efficient computations unfolded tensor times Khatri-Rao products
-        for specialized tensors see also
-        - :func::`sptensor.uttkrp`
-        - ktensor.uttkrp
-        - ttensor.uttkrp
-
-        References
-        ----------
-        [1] B.W. Bader, T.G. Kolda
-            Efficient Matlab Computations With Sparse and Factored Tensors
-            SIAM J. Sci. Comput, Vol 30, No. 1, pp. 205--231, 2007
-        """
         order = range(n) + range(n + 1, self.ndim)
         Z = khatrirao(tuple(U[i] for i in order), reverse=True)
         return self.unfold(n).dot(Z)
+
+    @inherit_docstring_from(tensor_mixin)
+    def transpose(self, axes=None):
+        return dtensor(np.transpose(array(self), axes=axes))
 
 
 class unfolded_dtensor(np.ndarray):
@@ -205,21 +193,3 @@ class unfolded_dtensor(np.ndarray):
         arr = self.reshape(tuple(shape[order[0]],) + tuple(shape[order[1]]))
         arr = np.transpose(arr, argsort(order[0] + order[1]))
         return dtensor(arr)
-
-def transpose(dten, axes=None):
-    """
-    Compute transpose of dense tensor
-
-    Parameters
-    ----------
-    dten : dtensor
-        Dense tensor to be transposed.
-    axes : array_like of ints, optional
-        Permute the axes according to the values given.
-
-    Returns
-    -------
-    d : dtensor
-        dtensor with axes permuted.
-    """
-    return dtensor(np.transpose(array(dten), axes=axes))
