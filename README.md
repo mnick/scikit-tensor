@@ -48,3 +48,14 @@ Development
 Development is synchronized via git. To clone this repository, run::
 
     git clone git://github.com/scikit-learn/scikit-learn.git
+
+Authors
+-------
+Maximilian Nickel <mnick AT mit dot edu>
+
++ <http://twitter.com/mnick>
++ <http://github.com/mnick>
+
+License
+-------
+scikit-tensor is licensed under the GPLv3 <http://www.gnu.org/licenses/gpl-3.0.txt>
