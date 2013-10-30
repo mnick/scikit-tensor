@@ -14,12 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from numpy import dot, ones, array, outer
-from sktensor.core import khatrirao
+from numpy import dot, ones, array, outer, zeros, prod, sum
+from sktensor.core import khatrirao, tensor_mixin
 from sktensor.dtensor import dtensor
 
 __all__ = [
     'ktensor',
+    'vectorized_ktensor',
 ]
 
 
@@ -65,6 +66,20 @@ class ktensor(object):
             raise ValueError('Dimension mismatch of factor matrices')
         if lmbda is None:
             self.lmbda = ones(self.rank)
+
+    def __eq__(self, other):
+        if isinstance(other, ktensor):
+            # avoid costly elementwise comparison for obvious cases
+            if self.ndim != other.ndim or self.shape != other.shape:
+                return False
+            # do elementwise comparison
+            return all(
+                [(self.U[i] == other.U[i]).all() for i in range(self.ndim)] +
+                [(self.lmbda == other.lmbda).all()]
+            )
+        else:
+            # TODO implement __eq__ for tensor_mixins and ndarrays
+            raise NotImplementedError()
 
     def uttkrp(self, U, mode):
 
@@ -158,5 +173,33 @@ class ktensor(object):
             the original ktensor.
         """
         return dtensor(self.toarray())
+
+    def tovec(self):
+        v = zeros(sum([s * self.rank for s in self.shape]))
+        offset = 0
+        for M in self.U:
+            noff = offset + prod(M.shape)
+            v[offset:noff] = M.flatten()
+            offset = noff
+        return vectorized_ktensor(v, self.shape, self.lmbda)
+
+
+class vectorized_ktensor(object):
+
+    def __init__(self, v, shape, lmbda):
+        self.v = v
+        self.shape = shape
+        self.lmbda = lmbda
+
+    def toktensor(self):
+        order = len(self.shape)
+        rank = len(self.v) / sum(self.shape)
+        U = [None for _ in xrange(order)]
+        offset = 0
+        for i in xrange(order):
+            noff = offset + self.shape[i] * rank
+            U[i] = self.v[offset:noff].reshape((self.shape[i], rank))
+            offset = noff
+        return ktensor(U, self.lmbda)
 
 # vim: set et:
