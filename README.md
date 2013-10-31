@@ -42,16 +42,17 @@ To install in development mode
 
     python setup.py develop
 
-Development
------------
+Contributing & Development
+--------------------------
+scikit-tensor is still an extremely young project, and I'm happy for any contributions (patches, code, bugfixes, *documentation*, whatever) to get it to a stable and useful point. Feel free to get in touch with me via email (mnick at AT mit DOT edu) or directly via github.
 
-Development is synchronized via git. To clone this repository, run::
+Development is synchronized via git. To clone this repository, run
 
     git clone git://github.com/scikit-learn/scikit-learn.git
 
 Authors
 -------
-Maximilian Nickel <mnick AT mit dot edu>
+Maximilian Nickel <mnick AT mit DOT edu>
 
 + <http://twitter.com/mnick>
 + <http://github.com/mnick>
