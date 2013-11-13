@@ -27,6 +27,13 @@ T = dtensor(mat['X'])
 P, fit, itr, exectimes = cp_als(T, 3, init='random')
 ```
 
+References
+----------
+
+If you use `scikit-tensor` in your research, please cite
+
+	Maximilian Nickel. scikit-tensor Library (Version 0.1). Available Online, November 2013.
+
 Install
 -------
 This package uses distutils, which is the default way of installing python modules. To install in your home directory, use::
