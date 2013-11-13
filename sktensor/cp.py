@@ -166,7 +166,10 @@ def als(X, rank, dtype=np.float, **kwargs):
     return P, fit, itr, array(exectimes)
 
 
-def __init(init, X, N, rank, dtype):
+def _init(init, X, N, rank, dtype):
+    """
+    Initialization for CP models
+    """
     Uinit = [None for _ in range(N)]
     if isinstance(init, list):
         Uinit = init

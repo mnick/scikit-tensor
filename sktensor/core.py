@@ -40,8 +40,8 @@ class tensor_mixin(object):
 
     See also
     --------
-    sktensor.dtensor : Subclass for **dense** tensors.
-    sktensor.sptensor : Subclass for **sparse** tensors.
+    sktensor.dtensor : Subclass for *dense* tensors.
+    sktensor.sptensor : Subclass for *sparse* tensors.
     """
 
     __metaclass__ = ABCMeta
