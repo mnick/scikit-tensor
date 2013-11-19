@@ -7,7 +7,7 @@ from pkg_resources import require
 
 DISTNAME = 'scikit-tensor'
 DESCRIPTION = descr
-LONG_DESCRIPTION = descr
+LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 MAINTAINER = 'Maximilian Nickel',
 MAINTAINER_EMAIL = 'mnick@mit.edu',
 URL = 'http://github.com/mnick/scikit-tensor'
@@ -16,7 +16,7 @@ DOWNLOAD_URL = URL
 PACKAGE_NAME = 'sktensor'
 EXTRA_INFO = dict(
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 3 - Alpha",
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
