@@ -26,21 +26,24 @@ import numpy as np
 from numpy import array, dot, ones, sqrt
 from scipy.linalg import pinv
 from numpy.random import rand
-from core import nvecs, norm
-from ktensor import ktensor
+from .core import nvecs, norm
+from .ktensor import ktensor
 
 _log = logging.getLogger('CP')
-__DEF_MAXITER = 500
-__DEF_INIT = 'nvecs'
-__DEF_CONV = 1e-5
-__DEF_FIT_METHOD = 'full'
+_DEF_MAXITER = 500
+_DEF_INIT = 'nvecs'
+_DEF_CONV = 1e-5
+_DEF_FIT_METHOD = 'full'
+_DEF_TYPE = np.float
 
 __all__ = [
     'als',
+    'opt',
+    'wopt'
 ]
 
 
-def als(X, rank, dtype=np.float, **kwargs):
+def als(X, rank, **kwargs):
     """
     Alternating least-sqaures algorithm to compute the CP decomposition.
 
@@ -116,21 +119,23 @@ def als(X, rank, dtype=np.float, **kwargs):
            Analysis of individual differences in multidimensional scaling via an N-way generalization of 'Eckart-Young' decomposition.
            Psychometrika 35, 283–319 (1970).
     """
-    N = len(X.shape)
-    normX = norm(X)
 
     # init options
-    ainit = kwargs.pop('init', __DEF_INIT)
-    maxiter = kwargs.pop('maxIter', __DEF_MAXITER)
-    fit_method = kwargs.pop('fit_method', __DEF_FIT_METHOD)
-    conv = kwargs.pop('conv', __DEF_CONV)
+    ainit = kwargs.pop('init', _DEF_INIT)
+    maxiter = kwargs.pop('maxIter', _DEF_MAXITER)
+    fit_method = kwargs.pop('fit_method', _DEF_FIT_METHOD)
+    conv = kwargs.pop('conv', _DEF_CONV)
+    dtype = kwargs.pop('dtype', _DEF_TYPE)
     if not len(kwargs) == 0:
         raise ValueError('Unknown keywords (%s)' % (kwargs.keys()))
 
-    U = __init(ainit, X, N, rank, dtype)
+    N = X.ndim
+    normX = norm(X)
+
+    U = _init(ainit, X, N, rank, dtype)
     fit = 0
     exectimes = []
-    for itr in xrange(maxiter):
+    for itr in range(maxiter):
         tic = time.clock()
         fitold = fit
 
@@ -164,6 +169,22 @@ def als(X, rank, dtype=np.float, **kwargs):
             break
 
     return P, fit, itr, array(exectimes)
+
+
+def opt(X, rank, **kwargs):
+    ainit = kwargs.pop('init', _DEF_INIT)
+    maxiter = kwargs.pop('maxIter', _DEF_MAXITER)
+    conv = kwargs.pop('conv', _DEF_CONV)
+    dtype = kwargs.pop('dtype', _DEF_TYPE)
+    if not len(kwargs) == 0:
+        raise ValueError('Unknown keywords (%s)' % (kwargs.keys()))
+
+    N = X.ndim
+    U = _init(ainit, X, N, rank, dtype)
+
+
+def wopt(X, rank, **kwargs):
+    raise NotImplementedError()
 
 
 def _init(init, X, N, rank, dtype):

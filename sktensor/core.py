@@ -19,8 +19,8 @@ from numpy import setdiff1d
 from scipy.linalg import eigh
 from scipy.sparse import issparse as issparse_mat
 from scipy.sparse.linalg import eigsh
-from operator import isSequenceType
 from abc import ABCMeta, abstractmethod
+from .pyutils import is_sequence, func_attr
 #from coremod import khatrirao
 
 import sys
@@ -30,7 +30,7 @@ module_funs = []
 
 
 def modulefunction(func):
-    module_funs.append(func.func_name)
+    module_funs.append(func_attr(func, 'name'))
 
 
 class tensor_mixin(object):
@@ -94,7 +94,7 @@ class tensor_mixin(object):
             mode = range(self.ndim)
         if isinstance(V, np.ndarray):
             Y = self._ttm_compute(V, mode, transp)
-        elif isSequenceType(V):
+        elif is_sequence(V):
             dims, vidx = check_multiplication_dims(mode, self.ndim, len(V), vidx=True, without=without)
             Y = self._ttm_compute(V[vidx[0]], dims[0], transp)
             for i in xrange(1, len(dims)):
@@ -141,7 +141,7 @@ class tensor_mixin(object):
     def uttkrp(self, U, mode):
         """
         Unfolded tensor times Khatri-Rao product:
-        :math:`M = \unfold{X}{3} (U_1 \kr \cdots \kr U_N)`
+        :math:`M = \\unfold{X}{3} (U_1 \kr \cdots \kr U_N)`
 
         Computes the _matrix_ product of the unfolding
         of a tensor and the Khatri-Rao product of multiple matrices.
@@ -220,7 +220,7 @@ for fname in conv_funcs:
         return func(*args, **kwargs)
 
     nfunc = types.FunctionType(
-        call_on_me.func_code,
+        func_attr(call_on_me, 'code'),
         {
             'getattr': getattr,
             'fname': fname,
@@ -229,9 +229,8 @@ for fname in conv_funcs:
             'type': type
         },
         name=fname,
-        argdefs=call_on_me.func_defaults,
-        closure=call_on_me.func_closure
-
+        argdefs=func_attr(call_on_me, 'defaults'),
+        closure=func_attr(call_on_me, 'closure')
     )
     setattr(sys.modules[__name__], fname, nfunc)
 

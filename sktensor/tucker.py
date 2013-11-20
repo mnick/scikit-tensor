@@ -19,8 +19,8 @@ import time
 import numpy as np
 from numpy import array, ones, sqrt
 from numpy.random import rand
-from operator import isNumberType
-from core import ttm, nvecs, norm
+from .pyutils import is_number
+from .core import ttm, nvecs, norm
 
 __all__ = [
     'hooi',
@@ -87,7 +87,7 @@ def hooi(X, rank, **kwargs):
         raise ValueError('Unknown keywords (%s)' % (kwargs.keys()))
 
     ndims = X.ndim
-    if isNumberType(rank):
+    if is_number(rank):
         rank = rank * ones(ndims)
 
     normX = norm(X)
@@ -95,7 +95,7 @@ def hooi(X, rank, **kwargs):
     U = __init(ainit, X, ndims, rank, dtype)
     fit = 0
     exectimes = []
-    for itr in xrange(maxIter):
+    for itr in range(maxIter):
         tic = time.clock()
         fitold = fit
 
@@ -123,7 +123,7 @@ def hooi(X, rank, **kwargs):
     return core, U
 
 def hosvd(X, rank, dims=None, dtype=None, compute_core=True):
-    U = [None for _ in xrange(X.ndim)]
+    U = [None for _ in range(X.ndim)]
     if dims is None:
         dims = range(X.ndim)
     if dtype is None:

@@ -16,8 +16,8 @@
 
 import numpy as np
 from numpy import array, prod, argsort
-from sktensor.core import tensor_mixin, khatrirao
-from pyutils import inherit_docstring_from
+from .core import tensor_mixin, khatrirao
+from .pyutils import inherit_docstring_from
 
 __all__ = [
     'dtensor',
