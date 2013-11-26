@@ -92,7 +92,7 @@ class dtensor(tensor_mixin, np.ndarray):
             T = T.dot(v[vidx[i - 1]])
             ndim -= 1
         if ndim > 0:
-            T = T.reshape(sz)
+            T = T.reshape(sz[:ndim])
         return T
 
     def unfold(self, mode):
