@@ -87,7 +87,7 @@ class sptensor(tensor_mixin):
         self.dtype = dtype
 
         if shape is None:
-            self.shape = tuple(array(subs).max(axis=1).flatten())
+            self.shape = tuple(array(subs).max(axis=1).flatten() + 1)
         else:
             self.shape = tuple(int(d) for d in shape)
         self.ndim = len(subs)
