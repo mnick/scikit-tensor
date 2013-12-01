@@ -19,12 +19,12 @@ def accum(subs, vals, func=np.sum, sorted=False, shape=None, with_subs=False):
         nvals = np.zeros(len(idx) - 1)
     else:
         nvals = np.zeros(shape)
-    for i in xrange(len(idx) - 1):
+    for i in range(len(idx) - 1):
         nvals[i] = func(vals[idx[i]:idx[i + 1]])
 
     # return results
     if with_subs:
-        return nvals, subs[idx[:-1]]
+        return nvals, tuple(sub[idx[:-1]] for sub in subs)
     else:
         return nvals
 

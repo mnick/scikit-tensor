@@ -120,7 +120,7 @@ class sptensor(tensor_mixin):
     def _ttv_compute(self, v, dims, vidx, remdims):
         nvals = self.vals
         nsubs = self.subs
-        for i in xrange(len(dims)):
+        for i in range(len(dims)):
             idx = nsubs[dims[i]]
             w = v[vidx[i]]
             nvals = nvals * w[idx]
@@ -134,9 +134,10 @@ class sptensor(tensor_mixin):
 
         # Case 2: result is a vector
         if len(remdims) == 1:
-            c = accum(nsubs, nvals, shape=nshp)
-            if len(np.nonzero(c)[0]) <= 0.5 * prod(nshp):
-                return sptensor(arange(nshp), c)
+            c, nsubs = accum(nsubs, nvals, shape=nshp, with_subs=True)
+            nshp = nshp[0]
+            if len(np.nonzero(c)[0]) <= 0.5 * nshp:
+                return sptensor(nsubs, c, (nshp, ))
             else:
                 return c
 
@@ -156,9 +157,9 @@ class sptensor(tensor_mixin):
         # Allocate Y (final result) and v (vectors for elementwise computations)
         Y = zeros(shapeY)
         shapeY = array(shapeY)
-        v = [None for _ in xrange(len(edims))]
+        v = [None for _ in range(len(edims))]
 
-        for i in xrange(np.prod(shapeY[edims])):
+        for i in range(np.prod(shapeY[edims])):
             rsubs = unravel_index(shapeY[edims], i)
 
     def unfold(self, rdims, cdims=None, transp=False):
