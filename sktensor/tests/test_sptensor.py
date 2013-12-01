@@ -4,7 +4,7 @@ from numpy.random import randint
 from sktensor.dtensor import dtensor
 from sktensor.sptensor import sptensor
 from nose.tools import assert_equal, assert_true, raises
-from fixtures import ttm_fixture
+from .fixtures import ttm_fixture
 
 ttm_fixture(__name__)
 
@@ -12,7 +12,7 @@ ttm_fixture(__name__)
 def mysetup():
     shape = (25, 11, 18, 7, 2)
     sz = 100
-    subs = [None for _ in xrange(len(shape))]
+    subs = [None for _ in range(len(shape))]
     for i in range(len(shape)):
         subs[i] = randint(0, shape[i], sz)
     vals = ones(sz)
@@ -80,7 +80,7 @@ def test_fold():
         assert_equal(len(shape), len(T.subs))
         assert_equal(len(subs), len(T.subs))
         assert_equal(X, T)
-        for j in xrange(len(subs)):
+        for j in range(len(subs)):
             subs[j].sort()
             T.subs[j].sort()
             assert_true((subs[j] == T.subs[j]).all())
@@ -91,6 +91,22 @@ def test_ttm():
     Y2 = S.ttm(U, 0)
     assert_equal((2, 4, 2), Y2.shape)
     assert_true((Y == Y2).all())
+
+
+def test_ttv():
+    # Test case by Andre Panisson to check return type of sptensor.ttv
+    subs = (
+        array([0, 1, 0, 5, 7, 8]),
+        array([2, 0, 4, 5, 3, 9]),
+        array([0, 1, 2, 2, 1, 0])
+    )
+    vals = array([1, 1, 1, 1, 1, 1])
+    S = sptensor(subs, vals, shape=[10, 10, 3])
+
+    sttv = S.ttv((zeros(10), zeros(10)), modes=[0, 1])
+    assert_equal(type(sttv), sptensor)
+    assert_true((allclose(zeros(3), sttv.vals)))
+    assert_true((allclose(np.arange(3), sttv.subs)))
 
 
 def test_sttm_me():
