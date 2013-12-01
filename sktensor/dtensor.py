@@ -56,11 +56,11 @@ class dtensor(tensor_mixin, np.ndarray):
 
     def _ttm_compute(self, V, mode, transp):
         sz = array(self.shape)
-        r1 = range(0, mode)
-        r2 = range(mode + 1, self.ndim)
+        r1 = list(range(0, mode))
+        r2 = list(range(mode + 1, self.ndim))
         order = [mode] + r1 + r2
         newT = self.transpose(axes=order)
-        newT = newT.reshape(sz[mode], prod(sz[r1 + range(mode + 1, len(sz))]))
+        newT = newT.reshape(sz[mode], prod(sz[r1 + list(range(mode + 1, len(sz)))]))
         if transp:
             newT = V.T.dot(newT)
             p = V.shape[1]
@@ -184,12 +184,10 @@ class unfolded_dtensor(np.ndarray):
     def fold(self):
         shape = array(self.ten_shape)
         N = len(shape)
-        #order = ([n], range(n) + range(n + 1, N))
         order = (
             [self.mode],
             range(N - 1, self.mode, -1) + range(self.mode - 1, -1, -1)
         )
-        #print tuple(shape[order[0]],) + tuple(shape[order[1]])
         arr = self.reshape(tuple(shape[order[0]],) + tuple(shape[order[1]]))
         arr = np.transpose(arr, argsort(order[0] + order[1]))
         return dtensor(arr)
