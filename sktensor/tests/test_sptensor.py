@@ -19,6 +19,17 @@ def mysetup():
     return tuple(subs), vals, shape
 
 
+def setup_diagonal():
+    """
+    Setup data for a 20x20x20 diagonal tensor
+    """
+    n = 20
+    shape = (n, n, n)
+    subs = [np.arange(0, shape[i]) for i in xrange(len(shape))]
+    vals = ones(n)
+    return tuple(subs), vals, shape
+
+
 def test_init():
     """
     Creation of new sptensor objects
@@ -29,9 +40,20 @@ def test_init():
     assert_true((array(shape) == T.shape).all())
 
     T = sptensor(subs, vals)
-    tshape = array(subs).max(axis=1)
+    tshape = array(subs).max(axis=1) + 1
     assert_equal(len(subs), len(T.shape))
     assert_true((tshape == array(T.shape)).all())
+
+
+def test_init_diagonal():
+    subs, vals, shape = setup_diagonal()
+    T = sptensor(subs, vals, shape)
+    assert_equal(len(shape), T.ndim)
+    assert_true((array(shape) == T.shape).all())
+
+    T = sptensor(subs, vals)
+    assert_equal(len(subs), len(T.shape))
+    assert_true((shape == array(T.shape)).all())
 
 
 @raises(ValueError)
