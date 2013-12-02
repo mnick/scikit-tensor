@@ -1,5 +1,6 @@
-from numpy import array, zeros
 import sys
+from numpy import array, zeros
+from numpy.random import randint
 
 
 def ttm_fixture(mname):
@@ -15,3 +16,26 @@ def ttm_fixture(mname):
     Y[:, :, 1] = array([[130, 157, 184, 211], [172, 208, 244, 280]])
     module.Y = Y
     module.U = array([[1, 3, 5], [2, 4, 6]])
+
+
+def sptensor_fixture(mname):
+    module = sys.modules[mname]
+    module.subs = (
+        array([0, 1, 0, 5, 7, 8]),
+        array([2, 0, 4, 5, 3, 9]),
+        array([0, 1, 2, 2, 1, 0])
+    )
+
+    module.vals = array([1, 2, 3, 4, 5, 6.1])
+    module.shape = (10, 12, 3)
+
+
+def sptensor_rand_fixture(mname):
+    shape = (25, 11, 18, 7, 2)
+    sz = 100
+    subs = tuple(randint(0, shape[i], sz) for i in range(len(shape)))
+
+    module = sys.modules[mname]
+    module.vals = randint(0, 100, sz)
+    module.shape = shape
+    module.subs = subs
