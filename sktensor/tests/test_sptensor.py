@@ -4,19 +4,10 @@ from numpy.random import randint
 from sktensor.dtensor import dtensor
 from sktensor.sptensor import sptensor
 from nose.tools import assert_equal, assert_true, raises
-from .fixtures import ttm_fixture
+from .fixtures import ttm_fixture, sptensor_rand_fixture
 
 ttm_fixture(__name__)
-
-
-def mysetup():
-    shape = (25, 11, 18, 7, 2)
-    sz = 100
-    subs = [None for _ in range(len(shape))]
-    for i in range(len(shape)):
-        subs[i] = randint(0, shape[i], sz)
-    vals = ones(sz)
-    return tuple(subs), vals, shape
+sptensor_rand_fixture(__name__)
 
 
 def setup_diagonal():
@@ -25,7 +16,7 @@ def setup_diagonal():
     """
     n = 20
     shape = (n, n, n)
-    subs = [np.arange(0, shape[i]) for i in xrange(len(shape))]
+    subs = [np.arange(0, shape[i]) for i in range(len(shape))]
     vals = ones(n)
     return tuple(subs), vals, shape
 
@@ -34,7 +25,6 @@ def test_init():
     """
     Creation of new sptensor objects
     """
-    subs, vals, shape = mysetup()
     T = sptensor(subs, vals, shape)
     assert_equal(len(shape), T.ndim)
     assert_true((array(shape) == T.shape).all())
@@ -63,14 +53,12 @@ def test_non2Dsubs():
 
 @raises(ValueError)
 def test_nonEqualLength():
-    subs, vals, shape = mysetup()
     sptensor(subs, ones(len(subs) + 1))
 
 
 def test_unfold():
-    subs, vals, shape = mysetup()
     Td = dtensor(zeros(shape, dtype=np.float32))
-    Td[subs] = 1
+    Td[subs] = vals
 
     for i in range(len(shape)):
         rdims = [i]
@@ -94,7 +82,6 @@ def test_unfold():
 
 
 def test_fold():
-    subs, vals, shape = mysetup()
     T = sptensor(subs, vals, shape)
     for i in range(len(shape)):
         X = T.unfold([i]).fold()
@@ -134,3 +121,14 @@ def test_ttv():
 def test_sttm_me():
     S = sptensor(T.nonzero(), T.flatten(), T.shape)
     S.ttm_me(U, [1], [0], False)
+
+
+def test_sp_uttkrp():
+    # Test case by Andre Panisson, sparse ttv
+    # see issue #3
+    S = sptensor(subs, vals, shape)
+    U = []
+    for shp in shape:
+        U.append(np.zeros((shp, 5)))
+    SU = S.uttkrp(U, mode=0)
+    assert_equal(SU.shape, (25, 5))
