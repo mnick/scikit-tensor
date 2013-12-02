@@ -186,9 +186,13 @@ class sptensor(tensor_mixin):
         R = U[1].shape[1] if mode == 0 else U[0].shape[1]
         dims = range(0, mode) + range(mode + 1, self.ndim)
         V = zeros((self.shape[mode], R))
-        for r in xrange(R):
+        for r in range(R):
             Z = tuple(U[n][:, r] for n in dims)
-            V[:, r] = self.ttv(Z, mode, without=True)
+            TZ = self.ttv(Z, mode, without=True)
+            if isinstance(TZ, sptensor):
+                V[TZ.subs, r] = TZ.vals
+            else:
+                V[:, r] = self.ttv(Z, mode, without=True)
         return V
 
     @inherit_docstring_from(tensor_mixin)
@@ -292,11 +296,11 @@ class unfolded_sptensor(coo_matrix):
         nsubs = zeros((len(self.data), len(self.ten_shape)), dtype=np.int)
         if len(self.rdims) > 0:
             nidx = unravel_index(self.row, self.ten_shape[self.rdims])
-            for i in xrange(len(self.rdims)):
+            for i in range(len(self.rdims)):
                 nsubs[:, self.rdims[i]] = nidx[i]
         if len(self.cdims) > 0:
             nidx = unravel_index(self.col, self.ten_shape[self.cdims])
-            for i in xrange(len(self.cdims)):
+            for i in range(len(self.cdims)):
                 nsubs[:, self.cdims[i]] = nidx[i]
         nsubs = [z.flatten() for z in hsplit(nsubs, len(self.ten_shape))]
         return sptensor(tuple(nsubs), self.data, self.ten_shape)
@@ -339,7 +343,7 @@ def _single_concatenate(ten, other, axis):
     for i in oaxes:
         if tshape[i] != oshape[i]:
             raise ValueError("Dimensions must match")
-    nsubs = [None for _ in xrange(len(tshape))]
+    nsubs = [None for _ in range(len(tshape))]
     for i in oaxes:
         nsubs[i] = np.concatenate((ten.subs[i], other.subs[i]))
     nsubs[axis] = np.concatenate((
