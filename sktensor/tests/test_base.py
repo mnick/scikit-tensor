@@ -1,14 +1,15 @@
-from numpy import array, zeros
+from numpy import array
 from numpy.random import randn
 from sktensor.core import *
 from sktensor import dtensor, sptensor, ktensor
 
-from nose import with_setup
 from nose.tools import assert_true
 from nose.tools import assert_equal
-from fixtures import ttm_fixture
+from .fixtures import ttm_fixture, sptensor_fixture
 
 ttm_fixture(__name__)
+sptensor_fixture(__name__)
+
 
 def test_check_multiplication_dims():
     ndims = 3
@@ -85,12 +86,12 @@ def test_dtensor_ttm():
 
 
 def test_spttv():
-    subs = (
-        array([0, 1, 0, 5, 7, 8]),
-        array([2, 0, 4, 5, 3, 9]),
-        array([0, 1, 2, 2, 1, 0])
-    )
-    vals = array([1, 1, 1, 1, 1, 1])
-    S = sptensor(subs, vals, shape=[10, 10, 3])
-    K = ktensor([randn(10, 2), randn(10, 2), randn(3, 2)])
+    #subs = (
+    #    array([0, 1, 0, 5, 7, 8]),
+    #    array([2, 0, 4, 5, 3, 9]),
+    #    array([0, 1, 2, 2, 1, 0])
+    #)
+    #vals = array([1, 1, 1, 1, 1, 1])
+    S = sptensor(subs, vals, shape=shape)
+    K = ktensor([randn(shape[0], 2), randn(shape[1], 2), randn(shape[2], 2)])
     K.innerprod(S)

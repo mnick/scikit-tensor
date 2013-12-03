@@ -293,7 +293,7 @@ def flipsign(U):
     element will be positive
     """
     midx = abs(U).argmax(axis=0)
-    for i in xrange(U.shape[1]):
+    for i in range(U.shape[1]):
         if U[midx[i], i] < 0:
             U[:, i] = -U[:, i]
     return U
@@ -363,9 +363,9 @@ def khatrirao(A, reverse=False):
         matorder = matorder[::-1]
     # preallocate
     P = np.zeros((M, N), dtype=A[0].dtype)
-    for n in xrange(N):
+    for n in range(N):
         ab = A[matorder[0]][:, n]
-        for j in xrange(1, len(matorder)):
+        for j in range(1, len(matorder)):
             ab = np.kron(ab, A[matorder[j]][:, n])
         P[:, n] = ab
     return P

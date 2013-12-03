@@ -4,7 +4,7 @@ from sktensor.dtensor import dtensor
 
 from nose.tools import assert_equal
 from nose.tools import assert_true
-from fixtures import ttm_fixture
+from .fixtures import ttm_fixture
 
 ttm_fixture(__name__)
 

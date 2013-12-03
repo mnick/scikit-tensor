@@ -194,9 +194,9 @@ class vectorized_ktensor(object):
     def toktensor(self):
         order = len(self.shape)
         rank = len(self.v) / sum(self.shape)
-        U = [None for _ in xrange(order)]
+        U = [None for _ in range(order)]
         offset = 0
-        for i in xrange(order):
+        for i in range(order):
             noff = offset + self.shape[i] * rank
             U[i] = self.v[offset:noff].reshape((self.shape[i], rank))
             offset = noff
