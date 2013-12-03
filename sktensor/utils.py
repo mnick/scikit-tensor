@@ -12,7 +12,8 @@ def accum(subs, vals, func=np.sum, sorted=False, shape=None, with_subs=False):
         sidx = lexsort(subs, axis=0)
         subs = [sub[sidx] for sub in subs]
         vals = vals[sidx]
-    idx = np.where(np.ediff1d(subs, to_begin=[1], to_end=[1]))[0]
+    idx = np.where(np.diff(subs).any(axis=0))[0] + 1
+    idx = np.insert(idx, [0, idx.shape[0]], [0, vals.shape[0]])
 
     # create values array
     if shape is None:
