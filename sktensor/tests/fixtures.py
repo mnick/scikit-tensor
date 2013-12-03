@@ -1,6 +1,6 @@
 import sys
 from numpy import array, zeros
-from numpy.random import randint
+from numpy.random import randint, seed
 
 
 def ttm_fixture(mname):
@@ -31,6 +31,7 @@ def sptensor_fixture(mname):
 
 
 def sptensor_rand_fixture(mname):
+    seed(5)
     shape = (25, 11, 18, 7, 2)
     sz = 100
     subs = tuple(randint(0, shape[i], sz) for i in range(len(shape)))
