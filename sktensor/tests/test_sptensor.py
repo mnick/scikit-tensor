@@ -65,7 +65,7 @@ def test_unfold():
         cdims = setdiff1d(range(len(shape)), rdims)[::-1]
         Md = Td.unfold(i)
 
-        T = sptensor(subs, vals, shape)
+        T = sptensor(subs, vals, shape, accumfun=lambda l: l[-1])
 
         Ms = T.unfold(rdims, cdims)
         assert_equal(Md.shape, Ms.shape)
