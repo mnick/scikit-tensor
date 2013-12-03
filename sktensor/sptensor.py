@@ -135,7 +135,8 @@ class sptensor(tensor_mixin):
         # Case 2: result is a vector
         if len(remdims) == 1:
             usubs = unique(nsubs[0])
-            c = bincount(nsubs[0], weights=nvals)[usubs]
+            bins = usubs.searchsorted(nsubs[0])
+            c = bincount(bins, weights=nvals)
             (nz,) = c.nonzero()
             return sptensor((usubs[nz],), c[nz], nshp)
 
