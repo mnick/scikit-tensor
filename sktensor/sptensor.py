@@ -22,7 +22,7 @@ from scipy.sparse import issparse as issparse_mat
 from sktensor.core import tensor_mixin
 from sktensor.utils import accum
 from sktensor.dtensor import unfolded_dtensor
-from sktensor.pyutils import inherit_docstring_from
+from sktensor.pyutils import inherit_docstring_from, from_to_without
 
 
 __all__ = [
@@ -184,7 +184,8 @@ class sptensor(tensor_mixin):
     @inherit_docstring_from(tensor_mixin)
     def uttkrp(self, U, mode):
         R = U[1].shape[1] if mode == 0 else U[0].shape[1]
-        dims = range(0, mode) + range(mode + 1, self.ndim)
+        #dims = list(range(0, mode)) + list(range(mode + 1, self.ndim))
+        dims = from_to_without(0, self.ndim, mode)
         V = zeros((self.shape[mode], R))
         for r in range(R):
             Z = tuple(U[n][:, r] for n in dims)
