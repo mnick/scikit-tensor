@@ -65,7 +65,7 @@ def test_unfold():
         cdims = setdiff1d(range(len(shape)), rdims)[::-1]
         Md = Td.unfold(i)
 
-        T = sptensor(subs, vals, shape)
+        T = sptensor(subs, vals, shape, accumfun=lambda l: l[-1])
 
         Ms = T.unfold(rdims, cdims)
         assert_equal(Md.shape, Ms.shape)
@@ -114,8 +114,10 @@ def test_ttv():
 
     sttv = S.ttv((zeros(10), zeros(10)), modes=[0, 1])
     assert_equal(type(sttv), sptensor)
-    assert_true((allclose(zeros(3), sttv.vals)))
-    assert_true((allclose(np.arange(3), sttv.subs)))
+    # sparse tensor should return only nonzero vals
+    assert_true((allclose(np.array([]), sttv.vals)))
+    assert_true((allclose(np.array([]), sttv.subs)))
+    assert_equal(sttv.shape, (3,))
 
 
 def test_sttm_me():
