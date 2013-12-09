@@ -80,7 +80,7 @@ class sptensor(tensor_mixin):
         if accumfun is not None:
             vals, subs = accum(
                 subs, vals,
-                sorted=False, with_subs=True, fun=accumfun
+                sorted=False, with_subs=True, func=accumfun
             )
         self.subs = subs
         self.vals = vals
