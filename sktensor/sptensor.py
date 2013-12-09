@@ -93,9 +93,14 @@ class sptensor(tensor_mixin):
         self.ndim = len(subs)
 
     def __eq__(self, other):
-        self._sort()
-        other._sort()
-        return (self.vals == other.vals).all() and (array(self.subs) == array(other.subs)).all()
+        if isinstance(other, sptensor):
+            self._sort()
+            other._sort()
+            return (self.vals == other.vals).all() and (array(self.subs) == array(other.subs)).all()
+        elif isinstance(other, np.ndarray):
+            return (self.toarray() == other).all()
+        else:
+            raise NotImplementedError('Unsupported object class for sptensor.__eq__ (%s)' % type(other))
 
     def _sort(self):
         subs = array(self.subs)
