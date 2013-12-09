@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ones, zeros, array, setdiff1d, allclose
 from numpy.random import randint
 from sktensor.dtensor import dtensor
-from sktensor.sptensor import sptensor
+from sktensor.sptensor import sptensor, fromarray
 from nose.tools import assert_equal, assert_true, raises
 from .fixtures import ttm_fixture, sptensor_rand_fixture
 
@@ -102,7 +102,7 @@ def test_ttm():
     assert_true((Y == Y2).all())
 
 
-def test_ttv():
+def test_ttv_sparse_result():
     # Test case by Andre Panisson to check return type of sptensor.ttv
     subs = (
         array([0, 1, 0, 5, 7, 8]),
@@ -117,6 +117,19 @@ def test_ttv():
     assert_true((allclose(zeros(3), sttv.vals)))
     assert_true((allclose(np.arange(3), sttv.subs)))
 
+def test_ttv():
+    result = array([
+        [70, 190],
+        [80, 200],
+        [90, 210]
+    ])
+
+    X = fromarray(T)
+    v = array([1, 2, 3, 4])
+    Xv = X.ttv(v, 1)
+
+    assert_equal((3, 2), Xv.shape)
+    assert_true((Xv == result).all())
 
 def test_sttm_me():
     S = sptensor(T.nonzero(), T.flatten(), T.shape)
