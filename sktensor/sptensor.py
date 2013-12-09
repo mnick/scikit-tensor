@@ -16,7 +16,7 @@
 
 import numpy as np
 from numpy import zeros, ones, array, arange, copy, ravel_multi_index, unravel_index
-from numpy import setdiff1d, hstack, hsplit, vsplit, sort, prod, lexsort
+from numpy import setdiff1d, hstack, hsplit, vsplit, sort, prod, lexsort, unique, bincount
 from scipy.sparse import coo_matrix
 from scipy.sparse import issparse as issparse_mat
 from sktensor.core import tensor_mixin
@@ -134,12 +134,11 @@ class sptensor(tensor_mixin):
 
         # Case 2: result is a vector
         if len(remdims) == 1:
-            c, nsubs = accum(nsubs, nvals, shape=nshp, with_subs=True)
-            nshp = nshp[0]
-            if len(np.nonzero(c)[0]) <= 0.5 * nshp:
-                return sptensor(nsubs, c, (nshp, ))
-            else:
-                return c
+            usubs = unique(nsubs[0])
+            bins = usubs.searchsorted(nsubs[0])
+            c = bincount(bins, weights=nvals)
+            (nz,) = c.nonzero()
+            return sptensor((usubs[nz],), c[nz], nshp)
 
         # Case 3: result is an array
         return sptensor(nsubs, nvals, shape=nshp, accumfun=np.sum)
