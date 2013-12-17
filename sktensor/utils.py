@@ -2,12 +2,12 @@ import numpy as np
 from numpy import cumprod, array, arange, zeros, floor, lexsort
 
 
-def accum(subs, vals, func=np.sum, sorted=False, with_subs=False):
+def accum(subs, vals, func=np.sum, issorted=False, with_subs=False):
     """
     NumPy implementation for Matlab's accumarray
     """
     # sort accmap for ediff if not sorted
-    if not sorted:
+    if not issorted:
         sidx = lexsort(subs, axis=0)
         subs = [sub[sidx] for sub in subs]
         vals = vals[sidx]
