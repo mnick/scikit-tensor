@@ -18,6 +18,7 @@ from numpy import array, dot, zeros, ones, arange, kron
 from numpy import setdiff1d
 from scipy.linalg import eigh
 from scipy.sparse import issparse as issparse_mat
+from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import eigsh
 from abc import ABCMeta, abstractmethod
 from .pyutils import is_sequence, func_attr
@@ -124,6 +125,10 @@ class tensor_mixin(object):
                 raise ValueError('Multiplicant is wrong size')
         remdims = np.setdiff1d(range(self.ndim), dims)
         return self._ttv_compute(v, dims, vidx, remdims)
+
+    #@abstractmethod
+    #def ttt(self, other, modes=None):
+    #    pass
 
     @abstractmethod
     def _ttm_compute(self, V, mode, transp):
@@ -267,15 +272,17 @@ def innerprod(X, Y):
     return dot(X.flatten(), Y.flatten())
 
 
-def nvecs(X, n, rank, do_flipsign=True):
+def nvecs(X, n, rank, do_flipsign=True, dtype=np.float):
     """
     Eigendecomposition of mode-n unfolding of a tensor
     """
     Xn = X.unfold(n)
-    Y = Xn.dot(Xn.T)
-    if issparse_mat(Y):
+    if issparse_mat(Xn):
+        Xn = csr_matrix(Xn, dtype=dtype)
+        Y = Xn.dot(Xn.T)
         _, U = eigsh(Y, rank, which='LM')
     else:
+        Y = Xn.dot(Xn.T)
         N = Y.shape[0]
         _, U = eigh(Y, eigvals=(N - rank, N - 1))
         #_, U = eigsh(Y, rank, which='LM')
