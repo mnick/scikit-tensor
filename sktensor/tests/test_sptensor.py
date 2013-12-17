@@ -119,6 +119,7 @@ def test_ttv_sparse_result():
     assert_true((allclose(np.array([]), sttv.subs)))
     assert_equal(sttv.shape, (3,))
 
+
 def test_ttv():
     result = array([
         [70, 190],
@@ -132,6 +133,7 @@ def test_ttv():
 
     assert_equal((3, 2), Xv.shape)
     assert_true((Xv == result).all())
+
 
 def test_sttm_me():
     S = sptensor(T.nonzero(), T.flatten(), T.shape)
@@ -147,3 +149,31 @@ def test_sp_uttkrp():
         U.append(np.zeros((shp, 5)))
     SU = S.uttkrp(U, mode=0)
     assert_equal(SU.shape, (25, 5))
+
+def test_getitem():
+    subs = (
+        array([0, 1, 0, 5, 7, 8]),
+        array([2, 0, 4, 5, 3, 9]),
+        array([0, 1, 2, 2, 1, 0])
+    )
+    vals = array([1, 2, 3, 4, 5, 6])
+    S = sptensor(subs, vals, shape=[10, 10, 3])
+    assert_equal(0, S[1, 1, 1])
+    assert_equal(0, S[1, 2, 3])
+    for i in range(len(vals)):
+        assert_equal(vals[i], S[subs[0][i], subs[1][i], subs[2][i]])
+
+def test_add():
+    subs = (
+        array([0, 1, 0]),
+        array([2, 0, 2]),
+        array([0, 1, 2])
+    )
+    vals = array([1, 2, 3])
+    S = sptensor(subs, vals, shape=[3, 3, 3])
+    D = np.arange(27).reshape(3, 3, 3)
+    T = S - D
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                assert_equal(S[i, j, k] - D[i, j, k], T[i, j, k])
