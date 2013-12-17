@@ -65,7 +65,7 @@ class sptensor(tensor_mixin):
     <type 'float'>
     """
 
-    def __init__(self, subs, vals, shape=None, dtype=None, accumfun=None):
+    def __init__(self, subs, vals, shape=None, dtype=None, accumfun=None, issorted=False):
         if not isinstance(subs, tuple):
             raise ValueError('Subscripts must be a tuple of array-likes')
         if len(subs[0]) != len(vals):
@@ -76,15 +76,17 @@ class sptensor(tensor_mixin):
             if array(subs[i]).dtype.kind != 'i':
                 raise ValueError('Subscripts must be integers')
 
-        vals = array(vals)
+        vals = array(vals, dtype=dtype)
         if accumfun is not None:
             vals, subs = accum(
                 subs, vals,
-                sorted=False, with_subs=True, func=accumfun
+                issorted=False, with_subs=True, func=accumfun
             )
         self.subs = subs
         self.vals = vals
         self.dtype = dtype
+        self.issorted = issorted
+        self.accumfun = accumfun
 
         if shape is None:
             self.shape = tuple(array(subs).max(axis=1).flatten() + 1)
@@ -102,11 +104,37 @@ class sptensor(tensor_mixin):
         else:
             raise NotImplementedError('Unsupported object class for sptensor.__eq__ (%s)' % type(other))
 
+    def __getitem__(self, idx):
+        # TODO check performance
+        if len(idx) != self.ndim:
+            raise ValueError('subscripts must be complete')
+        sidx = ones(len(self.vals))
+        for i in range(self.ndim):
+            sidx = np.logical_and(self.subs[i] == idx[i], sidx)
+        vals = self.vals[sidx]
+        if len(vals) == 0:
+            vals = 0
+        elif len(vals) > 1:
+            if self.accumfun is None:
+                raise ValueError('Duplicate entries without specified accumulation function')
+            vals = self.accumfun(vals)
+        return vals
+
+    def __sub__(self, other):
+        if isinstance(other, np.ndarray):
+            res = -other
+            res[self.subs] += self.vals
+        else:
+            raise NotImplementedError()
+        return res
+
     def _sort(self):
+        # TODO check performance
         subs = array(self.subs)
         sidx = lexsort(subs)
         self.subs = tuple(z.flatten()[sidx] for z in vsplit(subs, len(self.shape)))
         self.vals = self.vals[sidx]
+        self.issorted = True
 
     def _ttm_compute(self, V, mode, transp):
         Z = self.unfold(mode, transp=True).tocsr()
@@ -223,6 +251,26 @@ class sptensor(tensor_mixin):
         nshape = [self.shape[idx] for idx in axes]
         return sptensor(nsubs, self.vals, nshape)
 
+    def concatenate(self, tpl, axis=None):
+        """
+        Concatenates sparse tensors.
+
+        Parameters
+        ----------
+        tpl :  tuple of sparse tensors
+            Tensors to be concatenated.
+        axis :  int, optional
+            Axis along which concatenation should take place
+        """
+        if axis is None:
+            raise NotImplementedError(
+                'Sparse tensor concatenation without axis argument is not supported'
+            )
+        T = self
+        for i in range(1, len(tpl)):
+            T = _single_concatenate(T, tpl[i], axis=axis)
+        return T
+
     def norm(self):
         """
         Frobenius norm for tensors
@@ -318,27 +366,6 @@ def fromarray(A):
     return sptensor(subs, vals, shape=A.shape, dtype=A.dtype)
 
 
-def concatenate(tpl, axis=None):
-    """
-    Concatenates sparse tensors.
-
-    Parameters
-    ----------
-    tpl :  tuple of sparse tensors
-        Tensors to be concatenated.
-    axis :  int, optional
-        Axis along which concatenation should take place
-    """
-    if axis is None:
-        raise NotImplementedError(
-            'Sparse tensor concatenation without axis argument is not supported'
-        )
-    T = tpl[0]
-    for i in range(1, len(tpl)):
-        T = _single_concatenate(T, tpl[i], axis=axis)
-    return T
-
-
 def _single_concatenate(ten, other, axis):
     tshape = ten.shape
     oshape = other.shape
@@ -370,33 +397,3 @@ def _build_idx(subs, vals, dims, tshape):
     else:
         idx = ravel_multi_index(tuple(subs[i] for i in dims), shape)
     return idx
-
-
-#def ttv(T, v, dims, vidx, remdims):
-#    if not isinstance(v, tuple):
-#        raise ValueError('v must be a tuple of vectors')
-#    nvals = T.vals
-#    for n in range(len(dims)):
-#        idx = T.subs[dims[n]]
-#        w = v[vidx[n]]
-#        W = w[idx]
-#        nvals = nvals * W
-#
-#    # all dimensions used, return sum
-#    if len(remdims) == 0:
-#        return nvals.sum()
-#
-#    # otherwise accumulate
-#    nsubs = [T.subs[r] for r in remdims]
-#    nsz = [T.shape[r] for r in remdims]
-#
-#    # result is a vector
-#    if len(remdims) == 1:
-#        c = accum(nsubs, nvals, nsz)
-#        if len(np.nonzero(c)[0]) <= 0.5 * nsz:
-#            return sptensor(arange(nsz), c)
-#        else:
-#            return nvals
-#
-#    # result is an array
-#    return sptensor(nsubs, nvals, shape=nsz, accumfun=np.sum)
