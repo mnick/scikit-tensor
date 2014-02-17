@@ -63,10 +63,7 @@ Development is synchronized via git. To clone this repository, run
 
 Authors
 -------
-Maximilian Nickel <mnick AT mit DOT edu>
-
-+ <http://twitter.com/mnick>
-+ <http://github.com/mnick>
+[Maximilian Nickel](http://web.mit.edu/~mnick) <mnick AT mit DOT edu> (<http://twitter.com/mnick>, <http://github.com/mnick>)
 
 License
 -------
@@ -74,5 +71,8 @@ scikit-tensor is licensed under the GPLv3 <http://www.gnu.org/licenses/gpl-3.0.t
 
 Related Projects
 ----------------
-* [Matlab Tensor Toolbox](http://www.sandia.gov/~tgkolda/TensorToolbox/index-2.5.html)
+* [Matlab Tensor Toolbox](http://www.sandia.gov/~tgkolda/TensorToolbox/index-2.5.html): 
+  A Matlab toolbox for tensor factorizations and tensor operations freely available for research and evaluation.
 * [Matlab Tensorlab](http://www.tensorlab.net/)
+  A Matlab toolbox for tensor factorizations, complex optimization, and tensor optimization freely available for
+  non-commercial academic research.
