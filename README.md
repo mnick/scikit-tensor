@@ -71,3 +71,8 @@ Maximilian Nickel <mnick AT mit DOT edu>
 License
 -------
 scikit-tensor is licensed under the GPLv3 <http://www.gnu.org/licenses/gpl-3.0.txt>
+
+Related Projects
+----------------
+* [Matlab Tensor Toolbox](http://www.sandia.gov/~tgkolda/TensorToolbox/index-2.5.html)
+* [Matlab Tensorlab](http://www.tensorlab.net/)
