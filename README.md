@@ -63,7 +63,7 @@ Development is synchronized via git. To clone this repository, run
 
 Authors
 -------
-[Maximilian Nickel](http://web.mit.edu/~mnick) <mnick AT mit DOT edu> (<http://twitter.com/mnick>, <http://github.com/mnick>)
+Maximilian Nickel [Web](http://web.mit.edu/~mnick/www), [Email](mnick AT mit DOT edu), [Twitter](http://twitter.com/mnick)
 
 License
 -------
