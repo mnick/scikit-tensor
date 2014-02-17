@@ -1,7 +1,18 @@
 scikit-tensor
 =============
 
-scikit-tensor is a Python module for multilinear algebra and tensor factorizations.
+scikit-tensor is a Python module for multilinear algebra and tensor 
+factorizations. Currently, scikit-tensor supports basic tensor operations 
+such as folding/unfolding, tensor-matrix and tensor-vector products as 
+well as the following tensor factorizations:
+
+* Canonical / Parafac Decomposition
+* Tucker Decomposition
+* RESCAL
+* DEDICOM 
+* INDSCAL 
+
+Moreover, all operations support dense and tensors.
 
 Dependencies
 ------------
@@ -36,7 +47,7 @@ If you use `scikit-tensor` in your research, please cite
 
 Install
 -------
-This package uses distutils, which is the default way of installing python modules. To install in your home directory, use::
+This package uses distutils, which is the default way of installing python modules. To install in your home directory, use
 
     python setup.py install --user
 
