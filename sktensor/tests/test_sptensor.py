@@ -150,6 +150,7 @@ def test_sp_uttkrp():
     SU = S.uttkrp(U, mode=0)
     assert_equal(SU.shape, (25, 5))
 
+
 def test_getitem():
     subs = (
         array([0, 1, 0, 5, 7, 8]),
@@ -160,8 +161,13 @@ def test_getitem():
     S = sptensor(subs, vals, shape=[10, 10, 3])
     assert_equal(0, S[1, 1, 1])
     assert_equal(0, S[1, 2, 3])
-    for i in range(len(vals)):
-        assert_equal(vals[i], S[subs[0][i], subs[1][i], subs[2][i]])
+    assert_equal(1, S[0, 2, 0])
+    assert_equal(2, S[1, 0, 1])
+    assert_equal(3, S[0, 4, 2])
+    assert_equal(4, S[5, 5, 2])
+    assert_equal(5, S[7, 3, 1])
+    assert_equal(6, S[8, 9, 0])
+
 
 def test_add():
     subs = (
