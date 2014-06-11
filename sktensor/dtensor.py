@@ -159,7 +159,7 @@ class dtensor(tensor_mixin, np.ndarray):
 
     @inherit_docstring_from(tensor_mixin)
     def uttkrp(self, U, n):
-        order = range(n) + range(n + 1, self.ndim)
+        order = list(range(n)) + list(range(n + 1, self.ndim))
         Z = khatrirao(tuple(U[i] for i in order), reverse=True)
         return self.unfold(n).dot(Z)
 

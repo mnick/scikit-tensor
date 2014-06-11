@@ -142,7 +142,7 @@ def als(X, rank, **kwargs):
         for n in range(N):
             Unew = X.uttkrp(U, n)
             Y = ones((rank, rank), dtype=dtype)
-            for i in (range(n) + range(n + 1, N)):
+            for i in (list(range(n)) + list(range(n + 1, N))):
                 Y = Y * dot(U[i].T, U[i])
             Unew = Unew.dot(pinv(Y))
             # Normalize
