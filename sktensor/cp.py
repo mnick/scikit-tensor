@@ -122,7 +122,7 @@ def als(X, rank, **kwargs):
 
     # init options
     ainit = kwargs.pop('init', _DEF_INIT)
-    maxiter = kwargs.pop('maxIter', _DEF_MAXITER)
+    maxiter = kwargs.pop('max_iter', _DEF_MAXITER)
     fit_method = kwargs.pop('fit_method', _DEF_FIT_METHOD)
     conv = kwargs.pop('conv', _DEF_CONV)
     dtype = kwargs.pop('dtype', _DEF_TYPE)
