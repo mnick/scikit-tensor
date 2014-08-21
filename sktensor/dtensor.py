@@ -97,6 +97,9 @@ class dtensor(tensor_mixin, np.ndarray):
             T = T.reshape(sz[:ndim])
         return T
 
+    def ttt(self, other, modes=None):
+        pass
+
     def unfold(self, mode):
         """
         Unfolds a dense tensor in mode n.
@@ -141,7 +144,7 @@ class dtensor(tensor_mixin, np.ndarray):
         sz = array(self.shape)
         N = len(sz)
         order = ([mode], from_to_without(N - 1, -1, mode, step=-1, skip=-1))
-        newsz = (sz[order[0]], prod(sz[order[1]]))
+        newsz = (sz[order[0]][0], prod(sz[order[1]]))
         arr = self.transpose(axes=(order[0] + order[1]))
         arr = arr.reshape(newsz)
         return unfolded_dtensor(arr, mode, self.shape)
