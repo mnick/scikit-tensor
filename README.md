@@ -54,7 +54,7 @@ scikit-tensor is still an extremely young project, and I'm happy for any contrib
 
 Development is synchronized via git. To clone this repository, run
 
-    git clone git://github.com/scikit-learn/scikit-learn.git
+    git clone git://github.com/mnick/scikit-tensor.git
 
 #### Authors
 Maximilian Nickel: [Web](http://web.mit.edu/~mnick/www), [Email](mailto://mnick AT mit DOT edu), [Twitter](http://twitter.com/mnick)
