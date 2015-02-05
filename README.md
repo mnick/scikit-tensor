@@ -1,5 +1,7 @@
 # scikit-tensor
 
+[![Join the chat at https://gitter.im/mnick/scikit-tensor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mnick/scikit-tensor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 scikit-tensor is a Python module for multilinear algebra and tensor 
 factorizations. Currently, scikit-tensor supports basic tensor operations 
 such as folding/unfolding, tensor-matrix and tensor-vector products as 
