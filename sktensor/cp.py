@@ -89,7 +89,7 @@ def als(X, rank, **kwargs):
     --------
     Create random dense tensor
 
-    >>> from sktensor import dtensor
+    >>> from sktensor import dtensor, ktensor
     >>> U = [np.random.rand(i,3) for i in (20, 10, 14)]
     >>> T = dtensor(ktensor(U).toarray())
 
