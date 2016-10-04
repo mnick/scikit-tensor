@@ -38,18 +38,14 @@ P, fit, itr, exectimes = cp_als(T, 3, init='random')
 ```
 
 #### Install
-This package uses distutils, which is the default way of installing python modules. To install in your home directory, use
+This package uses distutils, which is the default way of installing python modules. The use of virtual environments is recommended.
 
-    python setup.py install --user
-
-To install for all users on Unix/Linux
-
-    python setup.py build
-    sudo python setup.py install
+    pip install scikit-tensor
 
 To install in development mode
 
-    python setup.py develop
+    git clone git@github.com:mnick/scikit-tensor.git
+    pip install -e scikit-tensor/
 
 #### Contributing & Development
 scikit-tensor is still an extremely young project, and I'm happy for any contributions (patches, code, bugfixes, *documentation*, whatever) to get it to a stable and useful point. Feel free to get in touch with me via email (mnick at AT mit DOT edu) or directly via github.
