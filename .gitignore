@@ -5,3 +5,4 @@ dist
 scikit_tensor.egg-info
 docs/build
 docs/source/api
+.cache

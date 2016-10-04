@@ -1,0 +1,19 @@
+language: python
+cache: pip
+python:
+    - "2.7_with_system_site_packages"
+    - 3.4
+before_install:
+    - sudo apt-get update -qq
+    - if [[ $TRAVIS_PYTHON_VERSION == *"2."* ]]; then sudo apt-get install python-numpy python-scipy; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == *"3."* ]]; then sudo apt-get install python3-numpy python3-scipy; fi
+    - sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran
+install:
+    - pip install -U pip wheel
+    - pip install numpy
+    - pip install scipy nose pytest sphinx numpydoc sphinx-rtd-theme
+    - pip install -e .
+script: 
+    - py.test
+    - python setup.py build_sphinx
+    - python setup.py egg_info -b.dev sdist --formats gztar
