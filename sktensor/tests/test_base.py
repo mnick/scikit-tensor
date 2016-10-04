@@ -3,8 +3,6 @@ from numpy.random import randn
 from sktensor.core import *
 from sktensor import dtensor, sptensor, ktensor
 
-from nose.tools import assert_true
-from nose.tools import assert_equal
 from .fixtures import ttm_fixture, sptensor_fixture
 
 ttm_fixture(__name__)
@@ -14,9 +12,9 @@ sptensor_fixture(__name__)
 def test_check_multiplication_dims():
     ndims = 3
     M = 2
-    assert_true(([1, 2] == check_multiplication_dims(0, ndims, M, without=True)).all())
-    assert_true(([0, 2] == check_multiplication_dims(1, ndims, M, without=True)).all())
-    assert_true(([0, 1] == check_multiplication_dims(2, ndims, M, without=True)).all())
+    assert ([1, 2] == check_multiplication_dims(0, ndims, M, without=True)).all()
+    assert ([0, 2] == check_multiplication_dims(1, ndims, M, without=True)).all()
+    assert ([0, 1] == check_multiplication_dims(2, ndims, M, without=True)).all()
 
 
 def test_khatrirao():
@@ -43,8 +41,8 @@ def test_khatrirao():
     ])
 
     D = khatrirao((A, B))
-    assert_equal(C.shape, D.shape)
-    assert_true((C == D).all())
+    assert C.shape == D.shape
+    assert (C == D).all()
 
 def test_dense_fold():
     X = dtensor(T)
@@ -53,21 +51,21 @@ def test_dense_fold():
     X2 = X[:, :, 1]
 
     U = X.unfold(0)
-    assert_equal((3, 8), U.shape)
+    assert (3, 8) == U.shape
     for j in range(J):
-        assert_true((U[:, j] == X1[:, j]).all())
-        assert_true((U[:, j + J] == X2[:, j]).all())
+        assert (U[:, j] == X1[:, j]).all()
+        assert (U[:, j + J] == X2[:, j]).all()
 
     U = X.unfold(1)
-    assert_equal((4, 6), U.shape)
+    assert (4, 6) == U.shape
     for i in range(I):
-        assert_true((U[:, i] == X1[i, :]).all())
-        assert_true((U[:, i + I] == X2[i, :]).all())
+        assert (U[:, i] == X1[i, :]).all()
+        assert (U[:, i + I] == X2[i, :]).all()
 
     U = X.unfold(2)
-    assert_equal((2, 12), U.shape)
+    assert (2, 12) == U.shape
     for k in range(U.shape[1]):
-        assert_true((U[:, k] == array([X1.flatten('F')[k], X2.flatten('F')[k]])).all())
+        assert (U[:, k] == array([X1.flatten('F')[k], X2.flatten('F')[k]])).all()
 
 
 def test_dtensor_fold_unfold():
@@ -75,14 +73,14 @@ def test_dtensor_fold_unfold():
     X = dtensor(randn(*sz))
     for i in range(4):
         U = X.unfold(i).fold()
-        assert_true((X == U).all())
+        assert (X == U).all()
 
 
 def test_dtensor_ttm():
     X = dtensor(T)
     Y2 = X.ttm(U, 0)
-    assert_equal((2, 4, 2), Y2.shape)
-    assert_true((Y == Y2).all())
+    assert (2, 4, 2) == Y2.shape
+    assert (Y == Y2).all()
 
 
 def test_spttv():
