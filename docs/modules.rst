@@ -1,0 +1,6 @@
+Modules
+=======
+
+.. toctree::
+
+    sktensor

@@ -72,24 +72,6 @@ def get_version():
     mod = imp.load_source('version', os.path.join(PACKAGE_NAME, 'version.py'))
     return mod.__version__
 
-# Documentation building command
-try:
-    import subprocess
-    from sphinx.setup_command import BuildDoc as SphinxBuildDoc
-
-    class BuildDoc(SphinxBuildDoc):
-        """Run in-place build before Sphinx doc build"""
-        def run(self):
-            ret = subprocess.call(
-                [sys.executable, sys.argv[0], 'build_ext', '-i']
-            )
-            if ret != 0:
-                raise RuntimeError("Building Scipy failed!")
-            SphinxBuildDoc.run(self)
-    cmdclass = {'build_sphinx': BuildDoc}
-except ImportError:
-    cmdclass = {}
-
 
 def setup_package():
 # Call the setup function
@@ -104,7 +86,6 @@ def setup_package():
         long_description=LONG_DESCRIPTION,
         version=get_version(),
         #test_suite="nose.collector",
-        cmdclass=cmdclass,
         **EXTRA_INFO
     )
 
