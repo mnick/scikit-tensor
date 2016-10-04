@@ -1,3 +1,4 @@
+import pytest
 import logging
 from numpy import allclose
 from numpy.random import randn
@@ -23,7 +24,7 @@ def test_factorization():
 
     core_real = dtensor(randn(rank, rank, rank))
     T = core_real.ttm([A, B, C])
-    core, U = tucker_hooi.tucker_hooi(T, rank)
+    core, U = tucker.hooi(T, rank)
 
     assert allclose(T, ttm(core, U))
     assert allclose(A, orthomax(U[0]))

@@ -1,10 +1,7 @@
 from numpy import array
 from numpy.random import randn
 from sktensor.dtensor import dtensor
-
-from .fixtures import ttm_fixture
-
-ttm_fixture(__name__)
+from .ttm_fixture import T, U, Y
 
 
 def test_new():
@@ -17,7 +14,7 @@ def test_new():
     assert (T == A).all()
 
 
-def test_dense_fold():
+def test_dense_fold(T):
     X = dtensor(T)
     I, J, K = T.shape
     X1 = X[:, :, 0]
@@ -49,7 +46,7 @@ def test_dtensor_fold_unfold():
         assert (X == U).all()
 
 
-def test_dtensor_ttm():
+def test_dtensor_ttm(T, Y, U):
     X = dtensor(T)
     Y2 = X.ttm(U, 0)
     assert (2, 4, 2) == Y2.shape

@@ -2,11 +2,8 @@ from numpy import array
 from numpy.random import randn
 from sktensor.core import *
 from sktensor import dtensor, sptensor, ktensor
-
-from .fixtures import ttm_fixture, sptensor_fixture
-
-ttm_fixture(__name__)
-sptensor_fixture(__name__)
+from .ttm_fixture import T, U, Y
+from .sptensor_fixture import shape, vals, subs
 
 
 def test_check_multiplication_dims():
@@ -44,7 +41,8 @@ def test_khatrirao():
     assert C.shape == D.shape
     assert (C == D).all()
 
-def test_dense_fold():
+
+def test_dense_fold(T):
     X = dtensor(T)
     I, J, K = T.shape
     X1 = X[:, :, 0]
@@ -76,14 +74,14 @@ def test_dtensor_fold_unfold():
         assert (X == U).all()
 
 
-def test_dtensor_ttm():
+def test_dtensor_ttm(T, U, Y):
     X = dtensor(T)
     Y2 = X.ttm(U, 0)
     assert (2, 4, 2) == Y2.shape
     assert (Y == Y2).all()
 
 
-def test_spttv():
+def test_spttv(subs, vals, shape):
     #subs = (
     #    array([0, 1, 0, 5, 7, 8]),
     #    array([2, 0, 4, 5, 3, 9]),
