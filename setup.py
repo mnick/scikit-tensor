@@ -6,7 +6,8 @@ import sys
 
 DISTNAME = 'scikit-tensor'
 DESCRIPTION = descr
-LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
+    LONG_DESCRIPTION = f.read()
 MAINTAINER = 'Maximilian Nickel',
 MAINTAINER_EMAIL = 'mnick@mit.edu',
 URL = 'http://github.com/mnick/scikit-tensor'
