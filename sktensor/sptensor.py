@@ -180,7 +180,7 @@ class sptensor(tensor_mixin):
         """
         Assume Y = T x_i V_i for i = 1...n can fit into memory
         """
-        shapeY = self.shape.copy()
+        shapeY = np.copy(self.shape)
 
         # Determine size of Y
         for n in np.union1d(edims, sdims):

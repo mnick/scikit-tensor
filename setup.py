@@ -89,6 +89,7 @@ def setup_package():
             'nose'
         ],
         #test_suite="nose.collector",
+        cmdclass=cmdclass,
         **EXTRA_INFO
     )
 
