@@ -44,7 +44,7 @@ except:
     print('setuptools module not found.')
     print("Install setuptools if you want to enable 'python setup.py develop'.")
 
-require('numpy', 'scipy', 'nose')
+require('numpy', 'scipy')
 
 
 def configuration(parent_package='', top_path=None, package_name=DISTNAME):
@@ -103,7 +103,6 @@ def setup_package():
         download_url=DOWNLOAD_URL,
         long_description=LONG_DESCRIPTION,
         version=get_version(),
-        #test_suite="nose.collector",
         cmdclass=cmdclass,
         **EXTRA_INFO
     )
